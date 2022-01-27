@@ -169,4 +169,75 @@ matrices_triple := function(triple,q,pm)
       end if;
     end for;
   end if;
+  error "No matrices";
+end function;
+
+
+bound_field_definition := function(triple,q,pm)
+  count_possibilities := 0;
+  semisimple:=false;
+  i:=1;
+  orderTriple:=[1,2,3];
+  while not semisimple and i le 3 do
+    if is_semisimple(triple[i],q) then
+      Insert(~triple,1,triple[i]);
+      Remove(~triple, i+1);
+      Insert(~orderTriple,1,i);
+      Remove(~orderTriple, i+1);
+      semisimple:=true;
+    end if;
+    i := i+1;
+  end while;
+
+  if semisimple then
+    La := possibilities(triple[1],q,pm);
+    List_a := La[1];
+    size_a := La[2];
+    A := List_a[1];
+    Lb := possibilities(triple[1],q,pm);
+    List_b := La[1];
+    size_b := La[2];
+    G:=GL(2,GF(Max(size_b,size_a)));
+    identity := G!Matrix([[1,0],[0,1]]);
+    for B in List_b do
+      for P in G do
+        BP := P*(G!B)*P^(-1);
+        matrices := [G!A,BP,identity];
+        ord := orderTriple;
+        ParallelSort(~ord,~matrices);
+        C := identity;
+        i := 1;
+        while i le 3 and matrices[i] ne identity do
+          C:=matrices[i]^(-1)*C;
+          i:=i+1;
+        end while;
+        i:=i+1;
+        while i le 3 do
+          C:=C*matrices[i]^(-1);
+          i:=i+1;
+        end while;
+        if order_PXL(C,q,triple[3]) eq triple[3] then
+          matrices:= [G!A,BP,C];
+          ord:=orderTriple;
+          ParallelSort(~ord,~matrices);
+          count_possibilities := count_possibilities+1;
+        end if;
+      end for;
+    end for;
+  else
+    List_a,size_a:=possibilities(triple[1],q,pm);
+    A := List_a[1];
+    List_b,size_b:=possibilities(triple[2],q,pm);
+    B:= List_b[1];
+    G:=SL(2,GF(Max(size_b,size_a)));
+    for P in G do
+      BP := P*(G!B)*P^(-1);
+      C:=((G!A)*BP)^(-1);
+      if order_PXL(C,q,triple[3]) eq triple[3] then
+        matrices:= [G!A,BP,C];
+        count_possibilities := count_possibilities +1;
+      end if;
+    end for;
+  end if;
+  return count_possibilities;
 end function;
