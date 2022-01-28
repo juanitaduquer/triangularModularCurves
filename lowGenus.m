@@ -58,8 +58,17 @@ groupForABC := function(a,b,c,p,bound)
   bigPower := p^power;
   k := GF(bigPower);
   zeta_2m := Roots(CyclotomicPolynomial(2*m),k)[1][1];
-  F := sub <k|lambdaZeta(zeta_2m,m,2*a),lambdaZeta(zeta_2m,m,2*b),lambdaZeta(zeta_2m,m,2*c)>;
-  E := sub <k|lambdaZeta(zeta_2m,m,a),lambdaZeta(zeta_2m,m,b),lambdaZeta(zeta_2m,m,c),lambdaZeta(zeta_2m,m,2*a)*lambdaZeta(zeta_2m,m,2*b)*lambdaZeta(zeta_2m,m,2*c)>;
+  genF := [lambdaZeta(zeta_2m,m,2*s) : s in [a,b,c] | s mod p ne 0];
+  genE := [lambdaZeta(zeta_2m,m,s) : s in [a,b,c] | s mod p ne 0];
+  lastE := k!1;
+  for s in [a,b,c] do
+    if s mod p ne 0 then
+      lastE *:= lambdaZeta(zeta_2m,m,2*s);
+    end if;
+  end for;
+  Append(~genE,lastE);
+  F := sub<k|genF>;
+  E := sub<k| genE>;
   degE := Degree(E);
   degF := Degree(F);
   if degF eq degE then
@@ -67,6 +76,16 @@ groupForABC := function(a,b,c,p,bound)
   end if;
   return [#E,-1];
 end function;
+
+//   F := sub <k|lambdaZeta(zeta_2m,m,2*a),lambdaZeta(zeta_2m,m,2*b),lambdaZeta(zeta_2m,m,2*c)>;
+//   E := sub <k|lambdaZeta(zeta_2m,m,a),lambdaZeta(zeta_2m,m,b),lambdaZeta(zeta_2m,m,c),lambdaZeta(zeta_2m,m,2*a)*lambdaZeta(zeta_2m,m,2*b)*lambdaZeta(zeta_2m,m,2*c)>;
+//   degE := Degree(E);
+//   degF := Degree(F);
+//   if degF eq degE then
+//     return [#E,1];
+//   end if;
+//   return [#E,-1];
+// end function;
 
 //*****************************//
 //         Ramification        //
@@ -93,26 +112,37 @@ ramificationTriple := function(a,b,c,p,q,pm)
   else
     if pm eq 1 then
       if p mod 4 eq 1 then
+        Mat := matricesTriple([a,b,c],q,pm);
+        if Mat[1][1][1] eq 0 then
+          print "Your lemma does not work",a,b,c,p,q,pm;
+        end if;
         return (q-1)/2+e_x(b,q)+e_x(c,q);
       else
+        Mat := matricesTriple([a,b,c],q,pm);
+        if Mat[1][1][1] ne 0 then
+          print "Your lemma does not work",a,b,c,p,q,pm;
+        end if;
         return (q+1)/2+e_x(b,q)+e_x(c,q);
       end if;
     else
-      if p mod 4 eq 1 then
-        return (q-1)/2+e_x(b,q)+e_x(c,q);
-      end if;
+      // if p mod 4 eq 1 then
+      //   return (q-1)/2+e_x(b,q)+e_x(c,q);
+      // end if;
       // Now any option can happen. It all depends on the charpoly being reducible or not
       // This is the same as det is a square or not.
       try
-        Mat := matrices_triple([a,b,c],q,pm);
+        Mat := matricesTriple([a,b,c],q,pm);
       catch e
         error "Mat triple did not work";
       end try;
       sigma2 := Mat[1];
-      d := Determinant(sigma2);
-      if IsSquare(d) then
+      print "This is the matrix";
+      print sigma2;
+      if sigma2[1][1] ne 0 then
+        print "This is the case when diagonal";
         return (q-1)/2+e_x(b,q)+e_x(c,q);
       end if;
+      print "This is the case when antidiagonal";
       return (q+1)/2+e_x(b,q)+e_x(c,q);
     end if;
   end if;
@@ -146,7 +176,6 @@ end function;
 
 genusTriangularModularCurve := function(a,b,c,p,bound)
   group := groupForABC(a,b,c,p,bound);
-  print "Found group";
   q := group[1];
   pm := group[2];
   try
@@ -192,21 +221,22 @@ listBoundedGenus := function(boundG)
               if (2*a*b*c) mod p ne 0 then
                 print a,b,c;
                 g,qPower,pm := genusTriangularModularCurve(a,b,c,p,boundq);
-                if g le 0 then
+                print "genus", g;
+                if g le 0 and g ne 0 then
                   print "Problem at", a,b,c,p;
                   Append(~problem,[a,b,c,p]);
                 end if;
                 if q eq qPower and g eq boundG then
                   Append(~list,[a,b,c,p,q,pm]);
                 end if;
-              elif (a*b*c) mod p eq 0 and p mod 2 ne 0 then
+              elif (a*b*c) mod p eq 0 and p ne 2 then
                 // Check if p is uramified in the quaternion algebra
                 print a,b,c;
                 print "p", p;
                 if not isRamified(a,b,c,p) then
-                  print "HERE";
                   try
                     g,qPower,pm := genusTriangularModularCurve(a,b,c,p,boundq);
+                    print "genus", g;
                     if q eq qPower and g eq boundG then
                       Append(~list,[a,b,c,p,q,pm]);
                     end if;
