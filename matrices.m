@@ -85,7 +85,7 @@ possibilities := function(order,q,pm)
     for factor in quadratic_factors do
       coeff := Coefficients(factor);
       M := Matrix([[0,-coeff[1]],[1,-coeff[2]]]);
-      if orderPXL(M,q,order) eq order then
+      if orderPXL(M,q,order+1) eq order then
         Append(~list, M);
       end if;
     end for;

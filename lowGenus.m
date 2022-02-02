@@ -1,5 +1,6 @@
-load "matrices.m";
-AttachSpec("~/Documents/Code/Belyi/Code/spec");
+// load "matrices.m";
+load "listOrganizer.m";
+// AttachSpec("~/Documents/Code/Belyi/Code/spec");
 
 lambda := function(s)
 // Input: an integer s. Ourput: lambda(s)=zeta_s+zeta_s^{-1}
@@ -49,7 +50,7 @@ end function;
 //*****************************//
 
 // SetDebugOnError(true);
-groupForABC := function(a,b,c,p,bound)
+groupForABC := function(a,b,c,p)
 // Input: a hyperbolic projective triple [a,b,c] and an integer bound
 // Output: q leq bound (if possible) such that G is as in Theorem A (Clark and Voight)
   m := Lcm([a,b,c]);
@@ -77,16 +78,6 @@ groupForABC := function(a,b,c,p,bound)
   return [#E,-1];
 end function;
 
-//   F := sub <k|lambdaZeta(zeta_2m,m,2*a),lambdaZeta(zeta_2m,m,2*b),lambdaZeta(zeta_2m,m,2*c)>;
-//   E := sub <k|lambdaZeta(zeta_2m,m,a),lambdaZeta(zeta_2m,m,b),lambdaZeta(zeta_2m,m,c),lambdaZeta(zeta_2m,m,2*a)*lambdaZeta(zeta_2m,m,2*b)*lambdaZeta(zeta_2m,m,2*c)>;
-//   degE := Degree(E);
-//   degF := Degree(F);
-//   if degF eq degE then
-//     return [#E,1];
-//   end if;
-//   return [#E,-1];
-// end function;
-
 //*****************************//
 //         Ramification        //
 //*****************************//
@@ -102,7 +93,6 @@ e_x := function(x,q)
   elif q mod x eq 0 then
     return q*(x-1)/x;
   end if;
-  return -1000;
 end function;
 
 ramificationTriple := function(a,b,c,p,q,pm)
@@ -111,39 +101,33 @@ ramificationTriple := function(a,b,c,p,q,pm)
     return e_x(a,q)+e_x(b,q)+e_x(c,q);
   else
     if pm eq 1 then
-      if p mod 4 eq 1 then
-        Mat := matricesTriple([a,b,c],q,pm);
-        if Mat[1][1][1] eq 0 then
-          print "Your lemma does not work",a,b,c,p,q,pm;
-        end if;
+      if q mod 4 eq 1 then
         return (q-1)/2+e_x(b,q)+e_x(c,q);
       else
-        Mat := matricesTriple([a,b,c],q,pm);
-        if Mat[1][1][1] ne 0 then
-          print "Your lemma does not work",a,b,c,p,q,pm;
-        end if;
         return (q+1)/2+e_x(b,q)+e_x(c,q);
       end if;
     else
-      // if p mod 4 eq 1 then
+      // if q mod 4 eq 1 then
       //   return (q-1)/2+e_x(b,q)+e_x(c,q);
       // end if;
-      // Now any option can happen. It all depends on the charpoly being reducible or not
-      // This is the same as det is a square or not.
-      try
-        Mat := matricesTriple([a,b,c],q,pm);
-      catch e
-        error "Mat triple did not work";
-      end try;
-      sigma2 := Mat[1];
-      print "This is the matrix";
-      print sigma2;
-      if sigma2[1][1] ne 0 then
-        print "This is the case when diagonal";
-        return (q-1)/2+e_x(b,q)+e_x(c,q);
-      end if;
-      print "This is the case when antidiagonal";
-      return (q+1)/2+e_x(b,q)+e_x(c,q);
+      // Now any option can happen. We also need to make sure that the triple
+      // generates the group G and not just a subgroup
+      // Mat := matricesTriple([a,b,c],q,pm);
+      // sigma2 := Mat[1];
+      // if sigma2[1][1] ne 0 then
+      //   return (q-1)/2+e_x(b,q)+e_x(c,q);
+      // end if;
+      // return (q+1)/2+e_x(b,q)+e_x(c,q);
+      // print "We are computing passportReps";
+      pass := PassportRepresentatives(PGL(2,q):abc:=[a,b,c]);
+      partition := pass[1][1];
+      ramification := 0;
+      for i in partition do
+        for j in i do
+          ramification := ramification + (j[1]-1)*(j[2]);
+        end for;
+      end for;
+      return ramification;
     end if;
   end if;
 end function;
@@ -174,8 +158,8 @@ end function;
 //          Low genus          //
 //*****************************//
 
-genusTriangularModularCurve := function(a,b,c,p,bound)
-  group := groupForABC(a,b,c,p,bound);
+genusTriangularModularCurve := function(a,b,c,p)
+  group := groupForABC(a,b,c,p);
   q := group[1];
   pm := group[2];
   try
@@ -198,10 +182,21 @@ isRamified := function(a,b,c,p)
   return true;
 end function;
 
-listBoundedGenus := function(boundG)
-  list := [];
-  problem := [];
-  boundq := qMax(boundG);
+isQAdmissible := function(a,b,c,p)
+  qAdm := true;
+  for s in [a,b,c] do
+    if s mod p eq 0 then
+      if s ne p then
+        qAdm := false;
+      end if;
+    end if;
+  end for;
+  return qAdm;
+end function;
+
+listBoundedGenus := function(genus)
+  list:=[];
+  boundq := qMax(genus);
   powers := [ n : n in [2..boundq] | IsPrimePower(n) ];
   for q in powers do
     if q mod 2 ne 0 then
@@ -220,41 +215,73 @@ listBoundedGenus := function(boundG)
             if c le cbound and isHyperbolic(a,b,c) and isProjective(a,b,c) then
               if (2*a*b*c) mod p ne 0 then
                 print a,b,c;
-                g,qPower,pm := genusTriangularModularCurve(a,b,c,p,boundq);
+                g,qPower,pm := genusTriangularModularCurve(a,b,c,p);
                 print "genus", g;
-                if g le 0 and g ne 0 then
-                  print "Problem at", a,b,c,p;
-                  Append(~problem,[a,b,c,p]);
-                end if;
-                if q eq qPower and g eq boundG then
+                if q eq qPower and g eq genus then
                   Append(~list,[a,b,c,p,q,pm]);
                 end if;
-              elif (a*b*c) mod p eq 0 and p ne 2 then
+              elif (a*b*c) mod p eq 0 then
                 // Check if p is uramified in the quaternion algebra
                 print a,b,c;
                 print "p", p;
-                if not isRamified(a,b,c,p) then
-                  try
-                    g,qPower,pm := genusTriangularModularCurve(a,b,c,p,boundq);
-                    print "genus", g;
-                    if q eq qPower and g eq boundG then
-                      Append(~list,[a,b,c,p,q,pm]);
-                    end if;
-                  catch e
-                    print "oooops";
-                    Append(~problem,[a,b,c,p]);
-                  end try;
+                if not isRamified(a,b,c,p) and isQAdmissible(a,b,c,p) then
+                  g,qPower,pm := genusTriangularModularCurve(a,b,c,p);
+                  print "genus", g;
+                  if q eq qPower and g eq genus then
+                    Append(~list,[a,b,c,p,q,pm]);
+                  end if;
                 end if;
               end if;
             end if;
           end for;
         end for;
       end for;
-    end if;
+    else
+      possibilities := Set(Divisors(2) cat Divisors(q+1) cat Divisors(q-1));
+      Exclude(~possibilities,1);
+      p := 2;
+      possibilities := Sort(SetToSequence(possibilities));
+      print "Possibilities for q=",q," are ",possibilities;
+      for i in [1..#possibilities] do
+        a := possibilities[i];
+        for j in [i..#possibilities] do
+          b:= possibilities[j];
+          cbound := cBound(a,b,q);
+          for k in [j..#possibilities] do
+            c:=possibilities[k];
+            if c le cbound and isHyperbolic(a,b,c) and isQAdmissible(a,b,c,p) and not isRamified(a,b,c,p) then
+              pass := [];
+              pm := 0;
+              passPSL := PassportRepresentatives(PSL(2,q) : abc := [a,b,c]);
+              if not #passPSL eq 0 then
+                pass := passPSL;
+                pm := 1;
+              else
+                passPGL := PassportRepresentatives(PGL(2,q) : abc := [a,b,c]);
+                if not #passPGL eq 0 then
+                  pass := passPGL;
+                  pm := -1;
+                end if;
+              end if;
+              if not #pass eq 0 then
+                partition := pass[1][1];
+                ramification := 0;
+                for i in partition do
+                  for j in i do
+                    ramification := ramification + (j[1]-1)*(j[2]);
+                  end for;
+                end for;
+                g := (1/2)*(-2*(q+1)+ramification+2);
+                print "(",a,b,c,")", g;
+                if g eq genus then
+                  Append(~list,[a,b,c,2,q,pm]);
+                end if;
+              end if;
+            end if;
+          end for;
+        end if;
+      end for;
+    end for;
   end for;
-  return list,problem;
+  return lexOrderABC(list);
 end function;
-
-//*****************************//
-//    Primes dividing abc      //
-//*****************************//
