@@ -1,6 +1,6 @@
-// load "matrices.m";
+AttachSpec("~/Documents/Code/Belyi/Code/spec");
+load "matrices.m";
 load "listOrganizer.m";
-// AttachSpec("~/Documents/Code/Belyi/Code/spec");
 
 lambda := function(s)
 // Input: an integer s. Ourput: lambda(s)=zeta_s+zeta_s^{-1}
@@ -107,27 +107,16 @@ ramificationTriple := function(a,b,c,p,q,pm)
         return (q+1)/2+e_x(b,q)+e_x(c,q);
       end if;
     else
-      // if q mod 4 eq 1 then
-      //   return (q-1)/2+e_x(b,q)+e_x(c,q);
-      // end if;
-      // Now any option can happen. We also need to make sure that the triple
-      // generates the group G and not just a subgroup
-      // Mat := matricesTriple([a,b,c],q,pm);
-      // sigma2 := Mat[1];
-      // if sigma2[1][1] ne 0 then
-      //   return (q-1)/2+e_x(b,q)+e_x(c,q);
-      // end if;
-      // return (q+1)/2+e_x(b,q)+e_x(c,q);
-      // print "We are computing passportReps";
-      pass := PassportRepresentatives(PGL(2,q):abc:=[a,b,c]);
-      partition := pass[1][1];
-      ramification := 0;
-      for i in partition do
-        for j in i do
-          ramification := ramification + (j[1]-1)*(j[2]);
-        end for;
-      end for;
-      return ramification;
+    // Now any option can happen.
+      Mat := matricesTriple([a,b,c],q,pm);
+      sigma2 := Mat[1];
+      if IsIrreducible(CharacteristicPolynomial(sigma2)) then
+        // The non-split semisimple case
+        return (q+1)/2+e_x(b,q)+e_x(c,q);
+      else
+        // The split semisimple case
+        return (q-1)/2+e_x(b,q)+e_x(c,q);
+      end if;
     end if;
   end if;
 end function;
@@ -172,7 +161,7 @@ end function;
 
 isRamified := function(a,b,c,p)
   Delta := TriangleGroup(a,b,c);
-  A := QuaternionAlgebra(Delta);
+  A := Delta`BaseRing;
   E := BaseField(A);
   ZZE := Integers(E);
   pp := p*ZZE;
@@ -279,9 +268,9 @@ listBoundedGenus := function(genus)
               end if;
             end if;
           end for;
-        end if;
+        end for;
       end for;
-    end for;
+    end if;
   end for;
   return lexOrderABC(list);
 end function;
