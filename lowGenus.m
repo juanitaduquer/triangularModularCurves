@@ -1,4 +1,4 @@
-AttachSpec("~/Documents/Code/Belyi/Code/spec");
+// AttachSpec("~/Documents/Code/Belyi/Code/spec");
 load "matrices.m";
 load "listOrganizer.m";
 
