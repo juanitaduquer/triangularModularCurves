@@ -25,7 +25,7 @@ orderPXL := function(M,q,bound)
 end function;
 
 possibilities := function(order,q,pm)
-  // returns a list of representatives of all possible conjugacy classes (possibly redundant).
+  // returns a list of representatives of all possible conjugacy classes of order order.
   list := [];
   F := GF(q);
   if pm eq 1 then
@@ -34,7 +34,7 @@ possibilities := function(order,q,pm)
       // We get two classes, [[1,1],[0,1]], and [[1,x],[0,1]], where x is a non square
       for x in F do
         if x ne F!0 and not IsSquare(x) then
-          return [Matrix([[F!1,F!1],[F!0,F!1]]),Matrix([[F!1,F!1],[F!0,F!1]])];
+          return [Matrix([[F!1,F!x],[F!0,F!1]]),Matrix([[F!1,F!1],[F!0,F!1]])];
         end if;
       end for;
     end if;

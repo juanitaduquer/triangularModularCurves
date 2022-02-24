@@ -1,5 +1,6 @@
-fixed_points := function(x,a,b,c,p,q,pm)
-  if not x eq 2 and 2*a*b*c mod p ne 0 then
+fixedPoints := function(x,a,b,c,p,q,pm)
+  // Counts how many fixed points the action of x has on the quotient G/H_0.
+  if not x eq 2 then
     if (q+1) mod x eq 0 then
       return 0;
     elif (q-1) mod x eq 0 then
@@ -7,126 +8,148 @@ fixed_points := function(x,a,b,c,p,q,pm)
     elif q mod x eq 0 then
       return 1;
     end if;
-  elif pm eq 1 then
+  elif pm eq 1 and p ne 2 then
     if q mod 4 eq 1 then
       return 2;
     else
       return 0;
     end if;
   end if;
-  if pm eq -1 then
-    P:=PassportRepresentatives(PGL(2,q):abc:=[a,b,c]);
+  if pm eq -1 and p ne 2 then
+    Mat := matricesTriple([a,b,c],q,pm);
+    sigma2 := Mat[1];
+    if IsIrreducible(CharacteristicPolynomial(sigma2)) then
+      // The non-split semisimple case
+      return 0;
+    else
+      // The split semisimple case
+      return 2;
+    end if;
   else
-    P:=PassportRepresentatives(PSL(2,q):abc:=[a,b,c]);
-  end if;
-  if #P[1][1][1] ge 2 then
-    return 2;
-  end if;
-  return 0;
-end function;
-
-
-genus_two_primes_2 := function(t1,t2)
-  a,b,c,p1,q1,pm1 := Explode([t1[1],t1[2],t1[3],t1[4],t1[5],t1[6]]);
-  p2,q2,pm2 := Explode([t2[4],t2[5],t2[6]]);
-  assert a eq t2[1] and b eq t2[2] and c eq t2[3];
-  fix_a := fixed_points(b,a,b,c,p1,q1,pm1)*fixed_points(b,a,b,c,p2,q2,pm2);
-  fix_b := fixed_points(b,a,b,c,p1,q1,pm1)*fixed_points(b,a,b,c,p2,q2,pm2);
-  fix_c := fixed_points(c,a,b,c,p1,q1,pm1)*fixed_points(c,a,b,c,p2,q2,pm2);
-  ram_a := (a-1)*((q1+1)*(q2+1)-fix_a)/a;
-  ram_b := (b-1)*((q1+1)*(q2+1)-fix_b)/b;
-  ram_c := (c-1)*((q1+1)*(q2+1)-fix_c)/c;
-  return (1/2)*(-2*(q1+1)*(q2+1)+ram_a+ram_b+ram_c +2);
-end function;
-
-ram :=function(x,q)
-  if (q-2) mod x eq 0 then
-    return (x-1)*(q-2)/x;
-  elif (q-1) mod x eq 0 then
-    return (x-1)*(q-1)/x;
-  elif q mod x eq 0 then
-    return (q-1)*q/x;
+    // The case p=2, a=2
+    return 1;
   end if;
 end function;
 
-genus_prime_square := function(a,b,c,p,pm)
-  q := p^4+p^3;
-  return (1/2)*(-2*(q+1)+ram(a,q)+ram(b,q)+ram(c,q)+2);
+genusDifferentPrimes := function(triples, fixedPoints2)
+  a,b,c := Explode([triples[1][1],triples[1][2],triples[1][3]]);
+  if a eq 2 then
+    fix_a := &*fixedPoints2;
+  else
+    fix_a := &*[fixedPoints(a,a,b,c,t[4],t[5],t[6]) : t in triples];
+  end if;
+  fix_b := &*[fixedPoints(b,a,b,c,t[4],t[5],t[6]) : t in triples];
+  fix_c := &*[fixedPoints(c,a,b,c,t[4],t[5],t[6]) : t in triples];
+  degree := &*[t[5]+1 : t in triples];
+  ram_a := (a-1)*(degree-fix_a)/a;
+  ram_b := (b-1)*(degree-fix_b)/b;
+  ram_c := (c-1)*(degree-fix_c)/c;
+  return (1/2)*(-2*degree+ram_a+ram_b+ram_c +2);
 end function;
 
+genusSamePrime := function(triple,power)
+  degree := ;
 
+end function;
 
+lambda := function(s)
+// Input: an integer s. Ourput: lambda(s)=zeta_s+zeta_s^{-1}
+  return RootOfUnity(s)+(1/RootOfUnity(s));
+end function;
 
-// For 2 primes
-new_genus_0 := [];
-new_genus_1 := [];
-new_genus_2 := [];
-problem := [];
-for i in [1..#l] do
-  t1:=l[i];
-  for j in [i..#l] do
-    t2:=l[j];
-    if not t1 eq t2 then
-      if ((t1[1] eq t2[1]) and  (t1[2]eq t2[2]) and (t1[3] eq t2[3]) ) then
-        print t1,t2;
-        g:=genus_two_primes_2(t1,t2);
-        if not Floor(g) eq g then
-          Append(~problem,[t1[1],t1[2],t1[3],t1[4],t1[5],t2[4],t2[5]]);
+primesAbove := function(t)
+  a,b,c,p := Explode([t[1],t[2],t[3],t[4]]);
+  E := SplittingField([MinimalPolynomial(lambda(a)),MinimalPolynomial(lambda(b)),MinimalPolynomial(lambda(c)),MinimalPolynomial(lambda(2*a)*lambda(2*b)*lambda(2*c))]);
+  ring_of_int_E := RingOfIntegers(E);
+  D_E := Factorization(ideal<ring_of_int_E|ring_of_int_E!p>);
+  numberOfPrimes := (#D_E)*D_E[1][2];
+  return numberOfPrimes;
+end function;
+
+createNewList := function(lists)
+  // Concatennates elements of lists that only differ by one element
+  new:=[];
+  checked := [];
+  for i in [1..#lists] do
+    if not i in checked then
+      t := lists[i];
+      Append(~checked, i);
+      for j in [j: j in [(i+1)..#lists] | not j in checked] do
+        S := Set(t cat lists[j]);
+        if #S eq (#t+1) then
+          Append(~new, SetToSequence(S));
+          Append(~checked, j);
         end if;
-        print t1[1],t1[2],t1[3],g ;
-        if g eq 0 then
-          Append(~new_genus_0,[t1[1],t1[2],t1[3],t1[4],t1[5],t2[4],t2[5]]);
-        elif g eq 1 then
-          Append(~new_genus_1,[t1[1],t1[2],t1[3],t1[4],t1[5],t2[4],t2[5]]);
-        elif g eq 2 then
-          Append(~new_genus_2,[t1[1],t1[2],t1[3],t1[4],t1[5],t2[4],t2[5]]);
-        end if;
-      end if;
+      end for;
     end if;
   end for;
-end for;
-
-
-// For 3 primes
-
-genus_3_primes := function(a,b,c,p1,p2,p3,q1,q2,q3,pm1,pm2,pm3,fx1,fx2,fx3)
-  fix_a := fx1*fx2*fx3;
-  fix_b := fixed_points(b,a,b,c,p1,q1,pm1)*fixed_points(b,a,b,c,p2,q2,pm2)*fixed_points(b,a,b,c,p3,q3,pm3);
-  fix_c := fixed_points(c,a,b,c,p1,q1,pm1)*fixed_points(c,a,b,c,p2,q2,pm2)*fixed_points(c,a,b,c,p3,q3,pm3);
-  ram_a := (a-1)*((q1+1)*(q2+1)*(q3+1)-fix_a)/a;
-  ram_b := (b-1)*((q1+1)*(q2+1)*(q3+1)-fix_b)/b;
-  ram_c := (c-1)*((q1+1)*(q2+1)*(q3+1)-fix_c)/c;
-  return (1/2)*(-2*(q1+1)*(q2+1)*(q3+1)+ram_a+ram_b+ram_c +2);
+  return SetToSequence(Set(new));
 end function;
 
-
-new_genus_0 := [];
-new_genus_1 := [];
-new_genus_2 := [];
-problem := [];
-for i in [1..#l] do
-  t1:=l[i];
-  for j in [i..#l] do
-    t2:=l[j];
-    for k in [j..#l] do
-      t3:=l[k];
-      if (not t1 eq t2) and (not t1 eq t3) and (not t3 eq t2) then
-        if ((t1[1] eq t2[1]) and  (t1[2]eq t2[2]) and (t1[3] eq t2[3]) and (t3[1] eq t2[1]) and  (t3[2]eq t2[2]) and (t3[3] eq t2[3])) then
-          print t1,t2, t3;
-          g:=genus_3_primes(t1[1],t1[2],t1[3],t1[4],t2[4],t3[4],t1[5],t2[5],t3[5],t1[6],t2[6],t3[6],t1[7],t2[7],t3[7]);
-          if (not Floor(g) eq g) or (g le -1) then
-            Append(~problem,[t1[1],t1[2],t1[3],t1[4],t2[4],t3[4]]);
-          end if;
-          print t1[1],t1[2],t1[3],g ;
-          if g eq 0 then
-            Append(~new_genus_0,[t1[1],t1[2],t1[3],t1[4],t2[4],t3[4]]);
-          elif g eq 1 then
-            Append(~new_genus_1,[t1[1],t1[2],t1[3],t1[4],t2[4],t3[4]]);
-          elif g eq 2 then
-            Append(~new_genus_2,[t1[1],t1[2],t1[3],t1[4],t2[4],t3[4]]);
-          end if;
-        end if;
+listCompositeGenusDifferentPrimes := function(possibilities, g)
+  /*input: A list of [a,b,c,p,q] where the curve X_0 has genus <= g. A bound g on the genus
+  output: A list of all curves [a,b,c,p_i,q_i] for 1<i where the curve X_0(a,b,c;\prod pp_1) has genus <=g.
+  */
+  lowGenus := <>;
+  toCheck := possibilities;
+  while #toCheck ne 0 do
+    t := toCheck[1];
+    sameTriple := [t];
+    for i in [2..#toCheck] do
+      if [toCheck[i][1],toCheck[i][2],toCheck[i][3]] eq [t[1],t[2],t[3]] then
+        Append(~sameTriple, toCheck[i]);
       end if;
     end for;
+    for poss in sameTriple do
+      Exclude(~toCheck, poss);
+    end for;
+    print sameTriple;
+    // Add #fixed points for efficiency
+    if #sameTriple ge 2 and t[1] eq 2 then
+      fixedPts := [fixedPoints(2,tp[1],tp[2],tp[3],tp[4],tp[5],tp[6]) : tp in sameTriple];
+    else
+      fixedPts := [-10 : tp in sameTriple];
+    end if;
+    if #sameTriple ge 2 then
+      possibleSubsets := Subsequences(Set(sameTriple), 2);
+      list2 := [i : i in possibleSubsets | i[1][4] lt i[2][4]];
+      newList := list2;
+      while #list2 ne 0 do
+        newList := [];
+        for triples in list2 do
+          genus := genusDifferentPrimes(triples,[fixedPts[Position(sameTriple,tt)] : tt in triples]);
+          if genus le g then
+            Append(~newList,triples);
+            if genus eq g then
+              Append(~lowGenus,triples);
+            end if;
+          end if;
+        end for;
+        list2 := createNewList(newList);
+        print list2;
+      end while;
+    end if;
+  end while;
+  return lowGenus;
+end function;
+
+listCompositeGenusSamePrimes := function(possibilities, g)
+  lowGenus := <>;
+  for t in possibilities do
+    n := primesAbove(t);
+    if n ge 2 then
+      fixedPts := fixedPoints(t[1],t[1],t[2],t[3],t[4],t[5],t[6]);
+      for i in [2..n] do
+        genus := genusDifferentPrimes([t : j in [1..i]],[fixedPts : j in [1..i]]);
+        if genus le g then
+          if genus eq g then
+            Append(~lowGenus,[t : j in [1..i]]);
+          end if;
+        else
+          break;
+        end if;
+      end for;
+    end if;
   end for;
-end for;
+  return lowGenus;
+end function;
