@@ -1,4 +1,5 @@
-// AttachSpec("~/Documents/Code/Belyi/Code/spec");
+AttachSpec("~/Documents/Code/Belyi/Code/spec");
+// AttachSpec("~/Belyi/Code/spec");
 load "matrices.m";
 load "listOrganizer.m";
 
@@ -501,7 +502,6 @@ listCompositeGenusDifferentPrimes := function(possibilities, g)
     for poss in sameTriple do
       Exclude(~toCheck, poss);
     end for;
-    print sameTriple;
     // Add #fixed points for efficiency
     if #sameTriple ge 2 and t[1] eq 2 then
       fixedPts := [fixedPointsWithGenus(tp) : tp in sameTriple];
@@ -549,4 +549,62 @@ listCompositeGenusSameRationalPrimes := function(possibilities, g)
     end if;
   end for;
   return lowGenus;
+end function;
+
+isHyperbolicInfinity := function(a,b,c,p)
+  chi := -1;
+  for s in [a,b,c] do
+    if s ne p then
+      chi+:=1/s;
+    end if;
+  end for;
+  if chi lt 0 then
+    return true;
+  end if;
+  return false;
+end function;
+
+stringWithInf:=function(a,b,c,p)
+  st:="";
+  inf:=0;
+  for s in [a,b,c] do
+    if s ne p then
+      st cat:= IntegerToString(s) cat ",";
+    else
+      inf+:=1;
+    end if;
+  end for;
+  st cat:= &cat["inf," : i in [1..inf]];
+  return st;
+end function;
+
+listNonCocompact := function(possibleTriples,g)
+  genusG:=[];
+  // First, look for the triples that are hyperbolic only when adding infinity instead of p
+  boundq:=qMax(g);
+  sphericalEuclidean:=[[2,2,n]:n in [2..boundq]] cat [[2,3,3],[2,3,4],[2,3,5],[2,3,6],[2,4,4],[3,3,3]];
+  for t in sphericalEuclidean do
+    check := [s : s in t|IsPrime(s) and s ne 2];
+    for s in check do
+      if #[v : v in t| v mod s eq 0 and not IsPrime(v)] eq 0 and isHyperbolicInfinity(t[1],t[2],t[3],s) then
+        q,pm:=Explode(groupForABC(t[1],t[2],t[3],s));
+        print t,s,genusTriangularModularCurve(t[1],t[2],t[3],s,q,pm);
+        if isQAdmissible(t[1],t[2],t[3],s,q) and genusTriangularModularCurve(t[1],t[2],t[3],s,q,pm) eq g then
+          st:="[" cat stringWithInf(t[1],t[2],t[3],s) cat IntegerToString(s) cat",";
+          st cat:= IntegerToString(q) cat "," cat IntegerToString(pm)cat"]";
+          Append(~genusG,st);
+        end if;
+      end if;
+    end for;
+  end for;
+  // Now look for the triples that are already hyperbolic
+  for t in possibleTriples do
+    a,b,c,p:=Explode([t[1],t[2],t[3],t[4]]);
+    if p in [a,b,c] then
+      st := "[" cat stringWithInf(a,b,c,p);
+      st cat:= IntegerToString(p)cat "," cat IntegerToString(t[5]) cat "," cat IntegerToString(t[6])cat"]";
+      Append(~genusG,st);
+    end if;
+  end for;
+  return SetToSequence(SequenceToSet(genusG));
 end function;
