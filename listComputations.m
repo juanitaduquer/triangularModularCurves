@@ -26,8 +26,8 @@ compositeGenus2same := listCompositeGenusSamePrimes(ggenus2 cat ggenus1 cat ggen
 print "Computed all the composite level low genus";
 
 nonCocompactGenus0 := listNonCocompact(genus0,0);
-nonCocompactGenus1 := listNonCocompact(genus1 cat genus0,1);
-// nonCocompactgenus2 := listNonCocompact(genus2 cat genus1 cat genus0,2);
+nonCocompactGenus1 := listNonCocompact(genus1,1);
+nonCocompactgenus2 := listNonCocompact(genus2,2);
 
 print "Computed all the non-cocompact low genus";
 
