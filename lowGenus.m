@@ -175,38 +175,63 @@ end function;
 groupForABC := function(a,b,c,p)
 // Input: a hyperbolic projective triple [a,b,c] and an integer bound
 // Output: q such that G=PXL_2(F_q) is as in Theorem A (Clark and Voight)
-  if p ne 2 then
-    m := Lcm([a,b,c]);
-    m div:= p^Valuation(m,p);
-    power := Order(p,2*m);
-    bigPower := p^power;
-    k := GF(bigPower);
-    zeta_2m := Roots(CyclotomicPolynomial(2*m),k)[1][1];
-    genF := [lambdaZeta(zeta_2m,m,2*s) : s in [a,b,c] | s mod p ne 0];
-    genE := [lambdaZeta(zeta_2m,m,s) : s in [a,b,c] | s mod p ne 0];
-    lastE := k!1;
-    for s in [s : s in [a,b,c] | s mod p ne 0] do
-      lastE *:= lambdaZeta(zeta_2m,m,2*s);
-    end for;
-    Append(~genE,lastE);
-    F := sub<k|genF>;
-    E := sub<k| genE>;
-    degE := Degree(E);
-    degF := Degree(F);
-    if degF eq degE then
-      return [#E,1];
-    end if;
-    return [#E,-1];
+  // if p ne 2 then
+  //   m := Lcm([a,b,c]);
+  //   m div:= p^Valuation(m,p);
+  //   power := Order(p,2*m);
+  //   bigPower := p^power;
+  //   k := GF(bigPower);
+  //   zeta_2m := Roots(CyclotomicPolynomial(2*m),k)[1][1];
+  //   genF := [lambdaZeta(zeta_2m,m,2*s) : s in [a,b,c] | s mod p ne 0];
+  //   genE := [lambdaZeta(zeta_2m,m,s) : s in [a,b,c] | s mod p ne 0];
+  //   lastE := k!1;
+  //   for s in [s : s in [a,b,c] | s mod p ne 0] do
+  //     lastE *:= lambdaZeta(zeta_2m,m,2*s);
+  //   end for;
+  //   Append(~genE,lastE);
+  //   F := sub<k|genF>;
+  //   E := sub<k| genE>;
+  //   degE := Degree(E);
+  //   degF := Degree(F);
+  //   if degF eq degE then
+  //     return [#E,1];
+  //   end if;
+  //   return [#E,-1];
+  // else
+  //   E := SplittingField([MinimalPolynomial(lambda(a)),MinimalPolynomial(lambda(b)),MinimalPolynomial(lambda(c)),MinimalPolynomial(lambda(2*a)*lambda(2*b)*lambda(2*c))]);
+  //   ZZE := RingOfIntegers(E);
+  //   D_E := Factorization(ideal<ZZE|ZZE!p>);
+  //   P := ideal<ZZE|D_E[1][1]>;
+  //   q := #ResidueClassField(P);
+  //   return [q,-1];
+  // end if;
+  m := Lcm([a,b,c]);
+  twom := 2*m;
+  twom div:= p^Valuation(twom,p);
+  if twom eq 1 then
+    power := 1;
   else
-    print "computing a splitting field";
-    E := SplittingField([MinimalPolynomial(lambda(a)),MinimalPolynomial(lambda(b)),MinimalPolynomial(lambda(c)),MinimalPolynomial(lambda(2*a)*lambda(2*b)*lambda(2*c))]);
-    print "The field E is", E;
-    ZZE := RingOfIntegers(E);
-    D_E := Factorization(ideal<ZZE|ZZE!p>);
-    P := ideal<ZZE|D_E[1][1]>;
-    q := #ResidueClassField(P);
-    return [q,-1];
+    power := Order(q,twom);
   end if;
+  bigPower := q^power;
+  k := GF(bigPower);
+  twoap,twobp,twocp := Explode([(2*s) div (p^Valuation(2*s,p)) : s in [a,b,c]]);
+  zeta_twom := PrimitiveElement(k)^((bigPower-1) div twom);
+  genF := [lambdaZeta(zeta_twom,m,2*s) : s in [a,b,c] | s mod p ne 0];
+  genE := [lambdaZeta(zeta_twom,m,s) : s in [a,b,c] | s mod p ne 0];
+  lastE := k!1;
+  for s in [s : s in [a,b,c] | s mod p ne 0] do
+    lastE *:= lambdaZeta(zeta_twom,m,2*s);
+  end for;
+  Append(~genE,lastE);
+  F := sub<k|genF>;
+  E := sub<k| genE>;
+  degE := Degree(E);
+  degF := Degree(F);
+  if degF eq degE then
+    return [#E,1];
+  end if;
+  return [#E,-1];
 end function;
 
 //*****************************//
@@ -217,11 +242,11 @@ e_x := function(x,q)
 // Given an integer x>1, it computes the ramification degree associated to sigma_a.
 // This uses Lemmas TODO: find lemmas on the paper
   if q mod x eq 0 then
-    return q*(x-1)/x;
+    return (q/x)*(x-1);
   elif (q+1) mod x eq 0 then
-    return (q+1)*(x-1)/x;
+    return ((q+1)/x)*(x-1);
   elif (q-1) mod x eq 0 then
-    return (q-1)*(x-1)/x;
+    return ((q-1)/x)*(x-1);
   end if;
 end function;
 
@@ -240,16 +265,22 @@ ramificationTriple := function(a,b,c,p,q,pm)
         return (q+1)/2+e_x(b,q)+e_x(c,q);
       end if;
     else
-    // Now anyting can happen.
-      Mat := matricesTriple([a,b,c],q,pm);
-      sigma2 := Mat[1];
-      if IsIrreducible(CharacteristicPolynomial(sigma2)) then
-        // The non-split semisimple case
+    // Now anyting can happen. We can use matrices, or check g is an integer.
+      r := (q+1)/2+e_x(b,q)+e_x(c,q);
+      if Floor((1/2)*(-2*(q+1)+r+2)) eq ((1/2)*(-2*(q+1)+r+2)) then
         return (q+1)/2+e_x(b,q)+e_x(c,q);
-      else
-        // The split semisimple case
-        return (q-1)/2+e_x(b,q)+e_x(c,q);
+      else;
+        return (q-1)/2 +e_x(b,q)+e_x(c,q);
       end if;
+      // Mat := matricesTriple([a,b,c],q,pm);
+      // sigma2 := Mat[1];
+      // if IsIrreducible(CharacteristicPolynomial(sigma2)) then
+      //   // The non-split semisimple case
+      //   return (q+1)/2+e_x(b,q)+e_x(c,q);
+      // else
+      //   // The split semisimple case
+      //   return (q-1)/2+e_x(b,q)+e_x(c,q);
+      // end if;
     end if;
   end if;
 end function;
@@ -293,29 +324,23 @@ end function;
 ispSplit := function(a,b,c,p,q)
   if 2*a*b*c mod p ne 0 then
     return true;
-  elif p eq 2 then
-    for m in Divisors(a) do
-      z := a div m;
-      if [b,c] eq [m*(z+1),m*z*(z+1)] or [b,c] eq [-m*(-z+1),m*z*(-z+1)] then
-        return false;
-      end if;
-    end for;
-    return true;
   else
-    F:=GF(q);
     m := Lcm([a,b,c]);
-    m div:= p^Valuation(m,p);
-    power := Order(p,2*m);
-    bigPower := p^power;
+    twom := 2*m;
+    twom div:= p^Valuation(twom,p);
+    if twom eq 1 then
+      power := 1;
+    else
+      power := Order(q,twom);
+    end if;
+    bigPower := q^power;
     k := GF(bigPower);
-    ap,bp,cp := Explode([s div p^Valuation(s,p) : s in [a,b,c]]);
-    // Primitive element ^(q-1)/(2m)
-    zeta_2m := Roots(CyclotomicPolynomial(2*m),k)[1][1];
-    for i in [i:i in [1..2*m]|Gcd(i,2*m) eq 1] do
-      z := zeta_2m^i;
-      z2a,z2b,z2c := Explode([z^(m div s):s in [ap,bp,cp]]);
+    twoap,twobp,twocp := Explode([(2*s) div (p^Valuation(2*s,p)) : s in [a,b,c]]);
+    zeta_twom := PrimitiveElement(k)^((bigPower-1) div twom);
+    for i in [i:i in [1..twom]|Gcd(i,twom) eq 1] do
+      z := zeta_twom^i;
+      z2a,z2b,z2c := Explode([z^(twom div twos) : twos in [twoap,twobp,twocp]]);
       l2a, l2b, l2c := Explode([z2a + 1/z2a, z2b + 1/z2b, z2c + 1/z2c]);
-      print l2a^2 + l2b^2 + l2c^2 - l2a*l2b*l2c - 4;
       if (l2a^2 + l2b^2 + l2c^2 - l2a*l2b*l2c - 4) ne 0 then
         return true;
       end if;
@@ -358,22 +383,6 @@ listBoundedGenus := function(genus)
                 if g eq genus then
                   Append(~list,[a,b,c,p,q,pm]);
                 end if;
-              // else
-              //   pass := PassportRepresentatives(PGL(2,q) : abc := [a,b,c]);
-              //   if not #pass eq 0 then
-              //     pm := -1;
-              //     partition := pass[1][1];
-              //     ramification := 0;
-              //     for part in partition do
-              //       ramification +:= &+[(j[1]-1)*(j[2]) : j in part];
-              //     end for;
-              //     g := (1/2)*(-2*(q+1)+ramification+2);
-              //     print "(",a,b,c,")", g;
-              //     if g eq genus then
-              //       Append(~list,[a,b,c,2,q,pm]);
-              //     end if;
-              //   end if;
-              // end if;
             end if;
           end if;
         end for;
@@ -383,9 +392,9 @@ listBoundedGenus := function(genus)
   return lexOrderABC(list);
 end function;
 
-//*****************************//
-//       Composite level       //
-//*****************************//
+//***********************************************//
+//                Composite level                //
+//***********************************************//
 
 fixedPoints := function(x,a,b,c,p,q,pm)
   // Counts how many fixed points the action of x has on the quotient G/H_0.
@@ -435,11 +444,6 @@ genusDifferentPrimes := function(triples, fixedPoints2)
   ram_c := (c-1)*(degree-fix_c)/c;
   return (1/2)*(-2*degree+ram_a+ram_b+ram_c +2);
 end function;
-
-// genusSamePrime := function(triple,power)
-//   degree := ;
-//
-// end function;
 
 primesAbove := function(t)
   a,b,c,p := Explode([t[1],t[2],t[3],t[4]]);
@@ -551,10 +555,61 @@ listCompositeGenusSameRationalPrimes := function(possibilities, g)
   return lowGenus;
 end function;
 
-isHyperbolicInfinity := function(a,b,c,p)
+fixedPointsSamePrime := function(x,a,b,c,p,q,pm,e)
+  // Counts how many fixed points the action of x has on the quotient G/H_0.
+  f:=fixedPoints(x,a,b,c,p,q,pm);
+  if f eq 0 or f eq 2 then
+    return f;
+  else
+    return p^e;
+  end if;
+end function;
+
+genusSamePrime := function(t, e, fixedPoints2)
+  a,b,c := Explode([t[1],t[2],t[3]]);
+  if a eq 2 and p ne 2 then
+    fix_a := fixedPoints2;
+  else
+    fix_a := fixedPointsSamePrime(a,a,b,c,t[4],t[5],t[6],e);
+  end if;
+  fix_b := fixedPointsSamePrime(b,a,b,c,t[4],t[5],t[6],e);
+  fix_c := fixedPointsSamePrime(c,a,b,c,t[4],t[5],t[6],e);
+  degree := t[5]^e+t[5]^(e-1);
+  ram_a := (a-1)*(degree-fix_a)/a;
+  ram_b := (b-1)*(degree-fix_b)/b;
+  ram_c := (c-1)*(degree-fix_c)/c;
+  return (1/2)*(-2*degree+ram_a+ram_b+ram_c +2);
+end function;
+
+listCompositeGenusSamePrimes := function(possibilities, g)
+  lowGenus := <>;
+  boundq:=qMax(g);
+  for t in possibilities do
+    for e in [e : e in [2..boundq]|t[5]^e+t[5]^(e-1)le boundq] do
+      fixedPts := fixedPointsWithGenus(t);
+      genus := genusSamePrime(t,e,fixedPts);
+      if genus le g then
+        if genus eq g then
+          Append(~lowGenus,Append(t,e));
+        end if;
+      else
+        break;
+      end if;
+    end for;
+  end for;
+  return lowGenus;
+end function;
+
+
+//***********************************************//
+//              Non-cocompact case               //
+//***********************************************//
+
+isHyperbolicInfinity := function(t,changeP,p)
   chi := -1;
-  for s in [a,b,c] do
-    if s ne p then
+  for i in [1..3] do
+    s:=t[i];
+    if s ne p or not changeP[i] then
       chi+:=1/s;
     end if;
   end for;
@@ -564,11 +619,13 @@ isHyperbolicInfinity := function(a,b,c,p)
   return false;
 end function;
 
-stringWithInf:=function(a,b,c,p)
+stringWithInf:=function(t,changeP,p)
+  a,b,c := Explode(t);
   st:="";
   inf:=0;
-  for s in [a,b,c] do
-    if s ne p then
+  for i in [1..3] do
+    s :=t[i];
+    if s ne p or not changeP[i] then
       st cat:= IntegerToString(s) cat ",";
     else
       inf+:=1;
@@ -578,33 +635,60 @@ stringWithInf:=function(a,b,c,p)
   return st;
 end function;
 
+changeP := function(t,p)
+  triplesChangep := [];
+  changed:=1;
+  while changed le #[s:s in t|s eq p] do
+    tri := [];
+    ci := 0;
+    for i in [1..3] do
+      if t[i] ne p or ci ge changed then
+        Append(~tri,false);
+      else
+        Append(~tri, true);
+        ci+:=1;
+      end if;
+    end for;
+    Append(~triplesChangep,tri);
+    changed+:=1;
+  end while;
+  return triplesChangep;
+end function;
+
 listNonCocompact := function(possibleTriples,g)
   genusG:=[];
   // First, look for the triples that are hyperbolic only when adding infinity instead of p
-  boundq:=qMax(g);
-  sphericalEuclidean:=[[2,2,n]:n in [2..boundq]] cat [[2,3,3],[2,3,4],[2,3,5],[2,3,6],[2,4,4],[3,3,3]];
+  boundq := qMax(g);
+  sphericalEuclidean := [[2,2,n] : n in [2..boundq]] cat [[2,3,3],[2,3,4],[2,3,5],[2,3,6],[2,4,4],[3,3,3]];
   for t in sphericalEuclidean do
-    check := [s : s in t|IsPrime(s) and s ne 2];
-    for s in check do
-      if #[v : v in t| v mod s eq 0 and not IsPrime(v)] eq 0 and isHyperbolicInfinity(t[1],t[2],t[3],s) then
-        q,pm:=Explode(groupForABC(t[1],t[2],t[3],s));
-        print t,s,genusTriangularModularCurve(t[1],t[2],t[3],s,q,pm);
-        if isQAdmissible(t[1],t[2],t[3],s,q) and genusTriangularModularCurve(t[1],t[2],t[3],s,q,pm) eq g then
-          st:="[" cat stringWithInf(t[1],t[2],t[3],s) cat IntegerToString(s) cat",";
-          st cat:= IntegerToString(q) cat "," cat IntegerToString(pm)cat"]";
-          Append(~genusG,st);
-        end if;
+    check := [s : s in t|IsPrime(s)];
+    for p in check do
+      if &or[isHyperbolicInfinity(t,change,p) : change in changeP(t,p)] then
+        q,pm := Explode(groupForABC(t[1],t[2],t[3],p));
+        for change in changeP(t,p) do
+          if #[v : v in t| v mod p eq 0 and not IsPrime(v)] eq 0 and isHyperbolicInfinity(t,change,p) then
+            print t,p;
+            if q le boundq then
+              genus := genusTriangularModularCurve(t[1],t[2],t[3],p,q,pm);
+              if isQAdmissible(t[1],t[2],t[3],p,q) and ispSplit(t[1],t[2],t[3],p,q) and genus eq g then
+                st:="[" cat stringWithInf(t,change,p) cat IntegerToString(p) cat",";
+                st cat:= IntegerToString(q) cat "," cat IntegerToString(pm)cat"]";
+                Append(~genusG,st);
+              end if;
+            end if;
+          end if;
+        end for;
       end if;
     end for;
   end for;
   // Now look for the triples that are already hyperbolic
   for t in possibleTriples do
     a,b,c,p:=Explode([t[1],t[2],t[3],t[4]]);
-    if p in [a,b,c] then
-      st := "[" cat stringWithInf(a,b,c,p);
+    for change in changeP([a,b,c],p) do
+      st := "[" cat stringWithInf([a,b,c],change,p);
       st cat:= IntegerToString(p)cat "," cat IntegerToString(t[5]) cat "," cat IntegerToString(t[6])cat"]";
       Append(~genusG,st);
-    end if;
+    end for;
   end for;
   return SetToSequence(SequenceToSet(genusG));
 end function;
