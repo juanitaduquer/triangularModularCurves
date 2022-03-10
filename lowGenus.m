@@ -211,9 +211,9 @@ groupForABC := function(a,b,c,p)
   if twom eq 1 then
     power := 1;
   else
-    power := Order(q,twom);
+    power := Order(p,twom);
   end if;
-  bigPower := q^power;
+  bigPower := p^power;
   k := GF(bigPower);
   twoap,twobp,twocp := Explode([(2*s) div (p^Valuation(2*s,p)) : s in [a,b,c]]);
   zeta_twom := PrimitiveElement(k)^((bigPower-1) div twom);
@@ -566,7 +566,7 @@ fixedPointsSamePrime := function(x,a,b,c,p,q,pm,e)
 end function;
 
 genusSamePrime := function(t, e, fixedPoints2)
-  a,b,c := Explode([t[1],t[2],t[3]]);
+  a,b,c,p := Explode([t[1],t[2],t[3],t[4]]);
   if a eq 2 and p ne 2 then
     fix_a := fixedPoints2;
   else
