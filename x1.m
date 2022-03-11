@@ -24,6 +24,17 @@ genusX1 := function(t)
   return (1/2)*(-2*deg+r+2);
 end function;
 
+genusCompositeX1:=function(list,powers)
+  a,b,c:=Explode([list[1][1],list[1][2],list[1][3]]);
+  N := &*[list[i][4]^powers[i]: i in [1..#list]];
+  degree := (EulerPhi(N)/2) * &*[list[i][5]^powers[i]+list[i][5]^(powers[i]-1) : i in [1..#list]];
+  if &and[l[4]in[l[1],l[2],l[3]] : l in list] and &and[list[1][4] eq l[4] : l in list] and SequenceToSet(powers) eq {1} then
+    // This is the rare case
+  else
+    return (degree*((1-1/a-1/b-1/c)/2))+1;
+  end if;
+end function;
+
 listFixedGenusX1 := function(possibilities,g)
   lowGenus := [];
   for t in possibilities do

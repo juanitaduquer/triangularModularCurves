@@ -31,10 +31,10 @@ nonCocompactGenus2 := listNonCocompact(genus2,2);
 
 print "Computed all the non-cocompact low genus";
 
-print "For X_0(a,b,c;NN) there is a total of"
-print #genus0 + #compositeGenus0diff +#compositeGenus0sameRat + #compositeGenus0same + #nonCocompactGenus0, "curves of genus 0";
-print #genus1 + #compositeGenus1diff +#compositeGenus1sameRat + #compositeGenus1same + #nonCocompactGenus1, "curves of genus 1";
-print #genus2 + #compositeGenus2diff +#compositeGenus2sameRat + #compositeGenus2same + #nonCocompactGenus2, "curves of genus 2";
+print "For X_0(a,b,c;NN) there is a total of";
+print (#genus0 + #compositeGenus0diff +#compositeGenus0sameRat + #compositeGenus0same + #nonCocompactGenus0), "curves of genus 0";
+print (#genus1 + #compositeGenus1diff +#compositeGenus1sameRat + #compositeGenus1same + #nonCocompactGenus1), "curves of genus 1";
+print (#genus2 + #compositeGenus2diff +#compositeGenus2sameRat + #compositeGenus2same + #nonCocompactGenus2), "curves of genus 2";
 
 // X_1(a,b,c;NN)
 genus0X1 := listFixedGenusX1(ggenus0,0);
