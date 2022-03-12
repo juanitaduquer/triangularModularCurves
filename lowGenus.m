@@ -557,11 +557,11 @@ end function;
 
 fixedPointsSamePrime := function(x,a,b,c,p,q,pm,e)
   // Counts how many fixed points the action of x has on the quotient G/H_0.
-  f:=fixedPoints(x,a,b,c,p,q,pm);
+  f := fixedPoints(x,a,b,c,p,q,pm);
   if f eq 0 or f eq 2 then
     return f;
   else
-    return p^e;
+    return p^(e-1);
   end if;
 end function;
 
