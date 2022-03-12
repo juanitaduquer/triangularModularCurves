@@ -31,14 +31,34 @@ nonCocompactGenus2 := listNonCocompact(genus2,2);
 
 print "Computed all the non-cocompact low genus";
 
-print "For X_0(a,b,c;NN) there is a total of";
-print (#genus0 + #compositeGenus0diff +#compositeGenus0sameRat + #compositeGenus0same + #nonCocompactGenus0), "curves of genus 0";
-print (#genus1 + #compositeGenus1diff +#compositeGenus1sameRat + #compositeGenus1same + #nonCocompactGenus1), "curves of genus 1";
-print (#genus2 + #compositeGenus2diff +#compositeGenus2sameRat + #compositeGenus2same + #nonCocompactGenus2), "curves of genus 2";
-
 // X_1(a,b,c;NN)
 genus0X1 := listFixedGenusX1(ggenus0,0);
 genus1X1 := listFixedGenusX1(ggenus1 cat ggenus0,1);
 genus2X1 := listFixedGenusX1(ggenus2 cat ggenus1 cat ggenus0,2);
 
-print "Computed all the X1 low genus";
+compositeDiff0X1 := listCompositeGenusX1(genus0X1,0);
+compositeSameRat0X1 := listCompositeGenusSameRationalPrimesX1(genus0X1,0);
+compositeSame0X1 := listCompositeGenusSamePrimesX1(genus0X1,0);
+
+compositeDiff1X1 := listCompositeGenusX1(genus0X1 cat genus1X1,1);
+compositeSameRat1X1 := listCompositeGenusSameRationalPrimesX1(genus0X1 cat genus1X1,1);
+compositeSame1X1 := listCompositeGenusSamePrimesX1(genus0X1 cat genus1X1,1);
+
+compositeDiff2X1 := listCompositeGenusX1(genus0X1 cat genus1X1 cat genus2X1,2);
+compositeSameRat2X1 := listCompositeGenusSameRationalPrimesX1(genus0X1 cat genus1X1 cat genus2X1,2);
+compositeSame2X1 := listCompositeGenusSamePrimesX1(genus0X1 cat genus1X1 cat genus2X1,2);
+
+nonCocompactGenus0X1 := listNonCocompactX1(genus0,0);
+nonCocompactGenus1X1 := listNonCocompactX1(genus1,1);
+nonCocompactGenus2X1 := listNonCocompactX1(genus2,2);
+
+print "For X_0(a,b,c;NN) there is a total of";
+print (#genus0 + #compositeGenus0diff +#compositeGenus0sameRat + #compositeGenus0same + #nonCocompactGenus0), "curves of genus 0";
+print (#genus1 + #compositeGenus1diff +#compositeGenus1sameRat + #compositeGenus1same + #nonCocompactGenus1), "curves of genus 1";
+print (#genus2 + #compositeGenus2diff +#compositeGenus2sameRat + #compositeGenus2same + #nonCocompactGenus2), "curves of genus 2";
+
+
+print "For X_1(a,b,c;NN) there is a total of";
+print (#genus0X1 + #compositeDiff0X1 +#compositeSameRat0X1 + #compositeSame0X1 + #nonCocompactGenus0), "curves of genus 0";
+print (#genus1X1 + #compositeDiff1X1 +#compositeSameRat1X1 + #compositeSame1X1 + #nonCocompactGenus1), "curves of genus 1";
+print (#genus2X1 + #compositeDiff2X1 +#compositeSameRat2X1 + #compositeSame2X1 + #nonCocompactGenus2), "curves of genus 2";

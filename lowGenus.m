@@ -667,13 +667,14 @@ listNonCocompact := function(possibleTriples,g)
         q,pm := Explode(groupForABC(t[1],t[2],t[3],p));
         for change in changeP(t,p) do
           if #[v : v in t| v mod p eq 0 and not IsPrime(v)] eq 0 and isHyperbolicInfinity(t,change,p) then
-            print t,p;
             if q le boundq then
-              genus := genusTriangularModularCurve(t[1],t[2],t[3],p,q,pm);
-              if isQAdmissible(t[1],t[2],t[3],p,q) and ispSplit(t[1],t[2],t[3],p,q) and genus eq g then
-                st:="[" cat stringWithInf(t,change,p) cat IntegerToString(p) cat",";
-                st cat:= IntegerToString(q) cat "," cat IntegerToString(pm)cat"]";
-                Append(~genusG,st);
+              if (p eq 2 and t eq [2,2,3]) or p ne 2 then
+                genus := genusTriangularModularCurve(t[1],t[2],t[3],p,q,pm);
+                if isQAdmissible(t[1],t[2],t[3],p,q) and ispSplit(t[1],t[2],t[3],p,q) and genus eq g then
+                  st:="[" cat stringWithInf(t,change,p) cat "," cat IntegerToString(p) cat",";
+                  st cat:= IntegerToString(q) cat "," cat IntegerToString(pm)cat"]";
+                  Append(~genusG,st);
+                end if;
               end if;
             end if;
           end if;
