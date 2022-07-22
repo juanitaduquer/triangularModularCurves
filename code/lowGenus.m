@@ -255,10 +255,25 @@ e_x := function(x,q)
   end if;
 end function;
 
+ramificationFromMatrix := function(M,q);
+  if IsIrreducible(CharacteristicPolynomial(M)) then
+    // The non-split semisimple case
+    return (q+1)/2;
+  else
+    // The split semisimple case
+    return (q-1)/2;
+  end if;
+end function;
+
 ramificationTriple := function(a,b,c,p,q,pm)
 // Computes the ramification of the cover X_0(a,b,c;p)->P^1
   if p eq 2 then
     return &+[e_x(s,q) : s in [a,b,c]];
+  end if;
+  // This is the hardest case. We cannot defice the ramification from only knowing that the genus is in ZZ
+  if [a,b] eq [2,2] then
+    sigmas := matricesTriple([a,b,c],q,pm);
+    return &+[ramificationFromMatrix(sigmas[i],q) : i in[1..3]];
   end if;
   if a ne 2 then
     return &+[e_x(s,q) : s in [a,b,c]];
@@ -641,8 +656,15 @@ stringWithInf:=function(t,changeP,p)
       inf+:=1;
     end if;
   end for;
-  st cat:= &cat["inf," : i in [1..inf]];
-  return st;
+  if inf eq 0 then
+    return st;
+  else
+    if inf eq 1 then
+      return st cat "inf";
+    else
+      return st cat &cat["inf," : i in [1..(inf-1)]] cat "inf";
+    end if;
+  end if;
 end function;
 
 changeP := function(t,p)
@@ -678,28 +700,30 @@ listNonCocompact := function(possibleTriples,g)
         for change in changeP(t,p) do
           if #[v : v in t| v mod p eq 0 and not IsPrime(v)] eq 0 and isHyperbolicInfinity(t,change,p) then
             if q le boundq then
-              if (p eq 2 and t eq [2,2,3]) or p ne 2 then
+              // if (p eq 2 and t eq [2,2,3]) or p ne 2 then
                 genus := genusTriangularModularCurve(t[1],t[2],t[3],p:q:=q,pm:=pm);
+                print genus, t, stringWithInf(t,change,p);
                 if isQAdmissible(t[1],t[2],t[3],p,q) and ispSplit(t[1],t[2],t[3],p,q) and genus eq g then
                   st:="[" cat stringWithInf(t,change,p) cat "," cat IntegerToString(p) cat",";
                   st cat:= IntegerToString(q) cat "," cat IntegerToString(pm)cat"]";
                   Append(~genusG,st);
                 end if;
-              end if;
+              // end if;
             end if;
           end if;
         end for;
       end if;
     end for;
   end for;
-  // Now look for the triples that are already hyperbolic
-  for t in possibleTriples do
-    a,b,c,p:=Explode([t[1],t[2],t[3],t[4]]);
-    for change in changeP([a,b,c],p) do
-      st := "[" cat stringWithInf([a,b,c],change,p);
-      st cat:= IntegerToString(p)cat "," cat IntegerToString(t[5]) cat "," cat IntegerToString(t[6])cat"]";
-      Append(~genusG,st);
-    end for;
-  end for;
+  // Now look for the triples that are already hyperbolic.
+  // We do not need to double count these.
+  // for t in possibleTriples do
+  //   a,b,c,p:=Explode([t[1],t[2],t[3],t[4]]);
+  //   for change in changeP([a,b,c],p) do
+  //     st := "[" cat stringWithInf([a,b,c],change,p) cat ",";
+  //     st cat:= IntegerToString(p)cat "," cat IntegerToString(t[5]) cat "," cat IntegerToString(t[6])cat"]";
+  //     Append(~genusG,st);
+  //   end for;
+  // end for;
   return SetToSequence(SequenceToSet(genusG));
 end function;
