@@ -1,4 +1,4 @@
-AttachSpec("~/Documents/Code/Belyi/Code/spec");
+// AttachSpec("~/Documents/Code/Belyi/Code/spec");
 // AttachSpec("~/Belyi/Code/spec");
 load "matrices.m";
 load "listOrganizer.m";
@@ -289,17 +289,18 @@ end function;
 //           Bounds            //
 //*****************************//
 
-qBound := function(a,b,c)
+qBound := function(a,b,c,g0)
   chi := 1-(1/a+1/b+1/c);
-  return Ceiling(4/chi+1);
+  return Ceiling(2*(g0+1)/chi+1);
 end function;
 
-cBound := function(a,b,q)
-  lhs := 1-1/a-4/(q-1) -1/b;
+cBound := function(a,b,q,g0)
+  lhs := 1-1/a-1/b-2*(g0+1)/(q-1);
   if lhs le 0 then
-    return q+1;
+    // There is no bound on c given by this inequality
+    return Infinity();
   else
-    return Floor(1/lhs+1);
+    return Floor(1/lhs);
   end if;
 end function;
 
@@ -370,7 +371,7 @@ listBoundedGenus := function(genus)
       a := possibilities[i];
       for j in [i..#possibilities] do
         b := possibilities[j];
-        cbound := cBound(a,b,q);
+        cbound := cBound(a,b,q,genus);
         for k in [j..#possibilities] do
           c := possibilities[k];
           if c le cbound and isHyperbolic(a,b,c) and isQAdmissible(a,b,c,p,q) then
