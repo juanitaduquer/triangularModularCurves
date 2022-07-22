@@ -3,19 +3,24 @@
 load "matrices.m";
 load "listOrganizer.m";
 
+
+//*****************************//
+//        Miscellaneous        //
+//*****************************//
 lambda := function(s)
-// Input: an integer s. Ourput: lambda(s)=zeta_s+zeta_s^{-1}
+/*  Input: an integer s.
+    Ourput: lambda(s)=zeta_s+zeta_s^{-1}, where zeta_s is a primitive s-th root of 1.*/
   return RootOfUnity(s)+(1/RootOfUnity(s));
 end function;
 
 lambdaZeta := function(zeta,m,s)
 // Input: 2m-th root of 1, an integer s.
-// Ourput: lambda(s)=zeta_s+zeta_s^{-1}, where zeta_s is computed from the root of 1.
+// Ourput: lambda(s)=zeta_s+zeta_s^{-1}, where zeta_s is computed from the 2m-th root of 1 given.
   return Parent(zeta)!(zeta^((2*m) div s)+(zeta^((2*m) div s))^(-1));
 end function;
 
 //*****************************//
-//    Triple conditions        //
+//  Triple (a,b,c) conditions  //
 //*****************************//
 isHyperbolic := function(a,b,c)
   // Given a triple (a,b,c), it returns true if the triple is hyperbolic.
@@ -240,7 +245,7 @@ end function;
 
 e_x := function(x,q)
 // Given an integer x>1, it computes the ramification degree associated to sigma_a.
-// This uses Lemmas TODO: find lemmas on the paper
+// This uses Lemma 3.1 of [DR. & V.]
   if q mod x eq 0 then
     return (q/x)*(x-1);
   elif (q+1) mod x eq 0 then
@@ -266,6 +271,7 @@ ramificationTriple := function(a,b,c,p,q,pm)
       end if;
     else
     // Now anyting can happen. We can use matrices, or check g is an integer.
+    // The latter is more efficient
       r := (q+1)/2+e_x(b,q)+e_x(c,q);
       if Floor((1/2)*(-2*(q+1)+r+2)) eq ((1/2)*(-2*(q+1)+r+2)) then
         return (q+1)/2+e_x(b,q)+e_x(c,q);
@@ -289,6 +295,7 @@ end function;
 //           Bounds            //
 //*****************************//
 
+// Come from Section 3 of [DR. & V.]. In particular, Proposition 3.11.
 qBound := function(a,b,c,g0)
   chi := 1-(1/a+1/b+1/c);
   return Ceiling(2*(g0+1)/chi+1);
@@ -312,8 +319,11 @@ end function;
 //*****************************//
 //            Genus            //
 //*****************************//
-
-genusTriangularModularCurve := function(a,b,c,p,q,pm)
+genusTriangularModularCurve := function(a,b,c,p : q := -1, pm := 0)
+  // Theorem 3.3 of [DR. & V.]
+  if q eq -1 then
+    q, pm := Explode(groupForABC(a,b,c,p));
+  end if;
   r := ramificationTriple(a,b,c,p,q,pm);
   return (1/2)*(-2*(q+1)+r+2);
 end function;
@@ -358,11 +368,11 @@ end function;
 //         prime case          //
 //*****************************//
 listBoundedGenus := function(genus)
-  list:=[];
+  list:=[[]:i in [0..genus]];
   boundq := qMax(genus);
   powers := [ n : n in [2..boundq] | IsPrimePower(n) ];
   for q in powers do
-    possibilities := Set(Divisors(q) cat Divisors(q+1) cat Divisors(q-1));
+    possibilities := Set(PrimeDivisors(q) cat Divisors(q+1) cat Divisors(q-1));
     Exclude(~possibilities,1);
     p := PrimeDivisors(q)[1];
     possibilities := Sort(SetToSequence(possibilities));
@@ -377,20 +387,19 @@ listBoundedGenus := function(genus)
           if c le cbound and isHyperbolic(a,b,c) and isQAdmissible(a,b,c,p,q) then
             qFromGroup, pm := Explode(groupForABC(a,b,c,p));
             if q eq qFromGroup and ispSplit(a,b,c,p,q) then
-              // if p ne 2 then
-                print a,b,c;
-                g := genusTriangularModularCurve(a,b,c,p,q,pm);
-                print "genus", g;
-                if g eq genus then
-                  Append(~list,[a,b,c,p,q,pm]);
-                end if;
+              print a,b,c;
+              g := genusTriangularModularCurve(a,b,c,p:q:=q,pm:=pm);
+              print "genus", g;
+              if g le genus then
+                Append(~list[Integers()!(g+1)],[a,b,c,p,q,pm]);
+              end if;
             end if;
           end if;
         end for;
       end for;
     end for;
   end for;
-  return lexOrderABC(list);
+  return [lexOrderABC(list[i]):i in [1..genus+1]];
 end function;
 
 //***********************************************//
@@ -670,7 +679,7 @@ listNonCocompact := function(possibleTriples,g)
           if #[v : v in t| v mod p eq 0 and not IsPrime(v)] eq 0 and isHyperbolicInfinity(t,change,p) then
             if q le boundq then
               if (p eq 2 and t eq [2,2,3]) or p ne 2 then
-                genus := genusTriangularModularCurve(t[1],t[2],t[3],p,q,pm);
+                genus := genusTriangularModularCurve(t[1],t[2],t[3],p:q:=q,pm:=pm);
                 if isQAdmissible(t[1],t[2],t[3],p,q) and ispSplit(t[1],t[2],t[3],p,q) and genus eq g then
                   st:="[" cat stringWithInf(t,change,p) cat "," cat IntegerToString(p) cat",";
                   st cat:= IntegerToString(q) cat "," cat IntegerToString(pm)cat"]";
