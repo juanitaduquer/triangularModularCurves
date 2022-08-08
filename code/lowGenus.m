@@ -1,5 +1,6 @@
 load "matrices.m";
 load "listOrganizer.m";
+Attach("tri-congruence.m");
 
 
 //*****************************//
@@ -293,7 +294,7 @@ listBoundedGenusNonCocompact := function(g)
   genusG:=[];
   // First, look for the triples that are hyperbolic only when adding infinity instead of p
   boundq := qMax(g);
-  print boundq;
+  // print boundq;
   sphericalEuclidean := [[2,2,n] : n in [2..boundq]] cat [[2,3,3],[2,3,4],[2,3,5],[2,3,6],[2,4,4],[3,3,3]];
   for t in sphericalEuclidean do
     check := [s : s in t|IsPrime(s)];
@@ -305,7 +306,7 @@ listBoundedGenusNonCocompact := function(g)
             if q le boundq then
               if (p eq 2 and t eq [2,2,3]) or p ne 2 then
                 genus := genusTriangularModularCurve(t[1],t[2],t[3],p:q:=q,pm:=pm);
-                print genus, t, stringWithInf(t,change,p);
+                // print genus, t, stringWithInf(t,change,p);
                 if isQAdmissible(t[1],t[2],t[3],p,q) and ispSplit(t[1],t[2],t[3],p,q) and genus eq g then
                   st:="[" cat stringWithInf(t,change,p) cat "," cat IntegerToString(p) cat",";
                   st cat:= IntegerToString(q) cat "," cat IntegerToString(pm)cat"]";
@@ -365,6 +366,5 @@ end function;
 
 countBoundedGenus := function(genus)
   L := listBoundedGenusCocompact(genus);
-  g0 := #L[1]+#listBoundedGenusNonCocompact(0);
   return [#L[i]+#listBoundedGenusNonCocompact(i-1): i in [1..#L]];
 end function;
