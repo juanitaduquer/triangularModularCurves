@@ -1,4 +1,4 @@
-R<inf>:=polynomialRing(Integers());
+R<inf> := PolynomialRing(Integers());
 /* ************************************
 Genus 0
 ************************************ */
