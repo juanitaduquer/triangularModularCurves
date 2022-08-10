@@ -290,6 +290,14 @@ changeP := function(t,p)
   return triplesChangep;
 end function;
 
+isExceptional := function(a,b,c)
+  if a eq b and a eq 2 then
+    return true;
+  else
+    return [a,b,c] in [[2,3,3],[3,3,3],[3,4,4],[2,3,4],[2,5,5],[5,5,5],[3,3,5],[3,5,5],[2,3,5]];
+  end if;
+end function;
+
 listBoundedGenusNonCocompact := function(g)
   genusG:=[];
   // First, look for the triples that are hyperbolic only when adding infinity instead of p
@@ -304,7 +312,7 @@ listBoundedGenusNonCocompact := function(g)
         for change in changeP(t,p) do
           if #[v : v in t| v mod p eq 0 and not IsPrime(v)] eq 0 and isHyperbolicInfinity(t,change,p) then
             if q le boundq then
-              if (p eq 2 and t eq [2,2,3]) or p ne 2 then
+              if not isExceptional(t[1],t[2],t[3]) then
                 genus := genusTriangularModularCurve(t[1],t[2],t[3],p:q:=q,pm:=pm);
                 // print genus, t, stringWithInf(t,change,p);
                 if isQAdmissible(t[1],t[2],t[3],p,q) and ispSplit(t[1],t[2],t[3],p,q) and genus eq g then
