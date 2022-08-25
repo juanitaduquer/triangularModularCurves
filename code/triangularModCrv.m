@@ -1,3 +1,254 @@
+//*****************************//
+//        Miscellaneous        //
+//*****************************//
+intrinsic Lambda(s::RngIntElt) -> FldCycElt
+{Returns lambda(s)=zeta_s+zeta_s^(-1), where zeta_s is a primitive s-th root of 1.}
+  return RootOfUnity(s)+(1/RootOfUnity(s));
+end intrinsic;
+
+intrinsic LambdaZeta(zeta::FldFinElt,m::RngIntElt,s::RngIntElt) -> FldFinElt
+{Returns lambda(s)=zeta_s+zeta_s^(-1), where zeta_s is computed from the 2m-th root of 1 given.}
+  return Parent(zeta)!(zeta^((2*m) div s)+(zeta^((2*m) div s))^(-1));
+end intrinsic;
+
+intrinsic LexOrderABC(L::SeqEnum) -> SeqEnum
+{Sorts the list by lex order in (a,b,c,q)}
+  N := [];
+  for t in L do
+    Append(~N,[t[1],t[2],t[3],t[5],t[4],t[6]]);
+  end for;
+  N:=Sort(N);
+  M:=[];
+  for t in N do
+    Append(~M,[t[1],t[2],t[3],t[5],t[4],t[6]]);
+  end for;
+  return M;
+end intrinsic;
+//*****************************//
+//  Triple (a,b,c) conditions  //
+//*****************************//
+intrinsic IsHyperbolicTriple(a::RngIntElt,b::RngIntElt,c::RngIntElt) -> BoolElt
+  {Returns true if the triple (a,b,c) is hyperbolic.}
+  if (1/a+1/b+1/c-1) lt 0 then
+    return true;
+  else
+    return false;
+  end if;
+end intrinsic;
+
+//*****************************//
+//     Group of definition     //
+//*****************************//
+intrinsic GroupForABC(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::RngIntElt) -> SeqEnum
+  {Returns the size q of the residue field of a prime of E(a,b,c) above p and 1 or -1 if the associated group is PSL_2(Fq) or PGL_2(Fq) respectively.}
+  m := Lcm([a,b,c]);
+  twom := 2*m;
+  twom div:= p^Valuation(twom,p);
+  if twom eq 1 then
+    power := 1;
+  else
+    power := Order(p,twom);
+  end if;
+  bigPower := p^power;
+  k := GF(bigPower);
+  twoap,twobp,twocp := Explode([(2*s) div (p^Valuation(2*s,p)) : s in [a,b,c]]);
+  zeta_twom := PrimitiveElement(k)^((bigPower-1) div twom);
+  genF := [LambdaZeta(zeta_twom,m,2*s) : s in [a,b,c] | s mod p ne 0];
+  genE := [LambdaZeta(zeta_twom,m,s) : s in [a,b,c] | s mod p ne 0];
+  lastE := k!1;
+  for s in [s : s in [a,b,c] | s mod p ne 0] do
+    lastE *:= LambdaZeta(zeta_twom,m,2*s);
+  end for;
+  Append(~genE,lastE);
+  F := sub<k|genF>;
+  E := sub<k| genE>;
+  degE := Degree(E);
+  degF := Degree(F);
+  if degF eq degE then
+    return [#E,1];
+  end if;
+  return [#E,-1];
+end intrinsic;
+
+//*****************************//
+//         Ramification        //
+//*****************************//
+
+intrinsic RamoficationAtS(s::RngIntElt,q::RngIntElt) -> RngIntElt
+{Given s, it computes the ramification degree associated to sigma_s using Lemma 3.1 of [DR. & V.]}
+  assert s ne 2 or (s eq 2 and IsPrimePower(q) and IsEven(q));
+  if q mod s eq 0 then
+    return (q/s)*(s-1);
+  elif (q+1) mod s eq 0 then
+    return ((q+1)/s)*(s-1);
+  elif (q-1) mod s eq 0 then
+    return ((q-1)/s)*(s-1);
+  end if;
+end intrinsic;
+
+intrinsic RamificationFromMatrix(M::AlgMatElt,q::RngIntElt) -> RngIntElt
+{Computes the ramification at s from the matrix representation of pi_PP(delta_s).}
+  if IsIrreducible(CharacteristicPolynomial(M)) then
+    // The non-split semisimple case
+    return (q+1)/2;
+  else
+    // The split semisimple case
+    return (q-1)/2;
+  end if;
+end intrinsic;
+
+intrinsic RamificationTriple(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::RngIntElt,q::RngIntElt,pm::RngIntElt) -> RngIntElt
+{Returns the ramification of the cover X_0(a,b,c;pp)->P^1}
+  if p eq 2 then
+    return &+[RamoficationAtS(s,q) : s in [a,b,c]];
+  end if;
+  // This is the hardest case. We cannot defice the ramification from only knowing that the genus is in ZZ
+  if [a,b] eq [2,2] then
+    // sigmas := MatricesTriple([a,b,c],q,pm);
+    // return &+[RamificationFromMatrix(sigmas[i],q) : i in[1..3]];
+  end if;
+  if a ne 2 then
+    return &+[RamoficationAtS(s,q) : s in [a,b,c]];
+  else
+    if pm eq 1 then
+      if q mod 4 eq 1 then
+        return (q-1)/2+RamoficationAtS(b,q)+RamoficationAtS(c,q);
+      else
+        return (q+1)/2+RamoficationAtS(b,q)+RamoficationAtS(c,q);
+      end if;
+    else
+    // Now anyting can happen. We use that g is an integer.
+      r := (q+1)/2+RamoficationAtS(b,q)+RamoficationAtS(c,q);
+      if Floor((1/2)*(-2*(q+1)+r+2)) eq ((1/2)*(-2*(q+1)+r+2)) then
+        return r;
+      else;
+        return r-1;
+      end if;
+    end if;
+  end if;
+end intrinsic;
+
+//*****************************//
+//           Bounds            //
+//*****************************//
+
+intrinsic QBound(a::RngIntElt,b::RngIntElt,c::RngIntElt,g::RngIntElt) -> RngIntElt
+{The maximum value of q that can give X_0(a,b,c;pp) of genus < g0 for pp with residue field of size q}
+  chi := 1-(1/a+1/b+1/c);
+  return Ceiling(2*(g+1)/chi+1);
+end intrinsic;
+
+intrinsic CBound(a::RngIntElt,b::RngIntElt,q::RngIntElt,g::RngIntElt) -> Any
+{The maximum value of c that can give X_0(a,b,c;pp) of genus < g0}
+  lhs := 1-1/a-1/b-2*(g+1)/(q-1);
+  if lhs le 0 then
+    // There is no bound on c given by this inequality
+    return Infinity();
+  else
+    return Floor(1/lhs);
+  end if;
+end intrinsic;
+
+intrinsic QMax(g::RngIntElt) -> RngIntElt
+{The maximum value of q that can give X_0(a,b,c;pp) of genus < g0 for pp with residue field of size q}
+  return 2*42*(g+1)+1;
+end intrinsic;
+
+//*****************************//
+//            Genus            //
+//*****************************//
+intrinsic GenusTriangularModularCurve(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::RngIntElt : q:= -1, pm:= 0) -> RngIntElt
+{The genus of X_0(a,b,c,pp) from Theorem 3.3 of [DR. & V.]}
+  if q eq -1 then
+    q, pm := Explode(GroupForABC(a,b,c,p));
+  end if;
+  r := RamificationTriple(a,b,c,p,q,pm);
+  return (1/2)*(-2*(q+1)+r+2);
+end intrinsic;
+
+intrinsic IsQAdmissible(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::RngIntElt, q::RngIntElt) -> BoolElt
+{True if the triple (a,b,c) is q-admissible.}
+  return &and[((q+1) mod s)*((q-1) mod s) eq 0 or s eq p : s in [a,b,c]];
+end intrinsic;
+
+intrinsic IspSplit(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::RngIntElt, q::RngIntElt) ->BoolElt
+{True if the prime pp divides beta.}
+  if 2*a*b*c mod p ne 0 then
+    return true;
+  else
+    m := Lcm([a,b,c]);
+    twom := 2*m;
+    twom div:= p^Valuation(twom,p);
+    if twom eq 1 then
+      power := 1;
+    else
+      power := Order(q,twom);
+    end if;
+    bigPower := q^power;
+    k := GF(bigPower);
+    twoap,twobp,twocp := Explode([(2*s) div (p^Valuation(2*s,p)) : s in [a,b,c]]);
+    zeta_twom := PrimitiveElement(k)^((bigPower-1) div twom);
+    for i in [i:i in [1..twom]|Gcd(i,twom) eq 1] do
+      z := zeta_twom^i;
+      z2a,z2b,z2c := Explode([z^(twom div twos) : twos in [twoap,twobp,twocp]]);
+      l2a, l2b, l2c := Explode([z2a + 1/z2a, z2b + 1/z2b, z2c + 1/z2c]);
+      if (l2a^2 + l2b^2 + l2c^2 - l2a*l2b*l2c - 4) ne 0 then
+        return true;
+      end if;
+    end for;
+    return false;
+  end if;
+end intrinsic;
+
+//************************************************//
+//                  Enumeration                   //
+//************************************************//
+intrinsic ListBoundedGenusAdmissible(genus::RngIntElt) -> SeqEnum
+{Returns the list (organized by genus in ascending order) of lists (a,b,c;p) such that the curve X_0(a,b,c;pp) have genus bounded by g and pp is a prime of norm p}
+  list := [[]:i in [0..genus]];
+  boundq := QMax(genus);
+  powers := [ n : n in [2..boundq] | IsPrimePower(n) ];
+  for q in powers do
+    possibilities := Set(PrimeDivisors(q) cat Divisors(q+1) cat Divisors(q-1));
+    Exclude(~possibilities,1);
+    p := PrimeDivisors(q)[1];
+    possibilities := Sort(SetToSequence(possibilities));
+    // print "Possibilities for q=",q," are ",possibilities;
+    for i in [1..#possibilities] do
+      a := possibilities[i];
+      for j in [i..#possibilities] do
+        b := possibilities[j];
+        cbound := CBound(a,b,q,genus);
+        for k in [j..#possibilities] do
+          c := possibilities[k];
+          if c le cbound and IsHyperbolicTriple(a,b,c) and IsQAdmissible(a,b,c,p,q) then
+            qFromGroup, pm := Explode(GroupForABC(a,b,c,p));
+            if q eq qFromGroup and IspSplit(a,b,c,p,q) then
+              // print a,b,c;
+              g := GenusTriangularModularCurve(a,b,c,p:q:=q,pm:=pm);
+              // print "genus", g;
+              if g le genus then
+                Append(~list[Integers()!(g+1)],[a,b,c,p,q,pm]);
+              end if;
+            end if;
+          end if;
+        end for;
+      end for;
+    end for;
+  end for;
+  return [LexOrderABC(list[i]):i in [1..genus+1]];
+end intrinsic;
+
+intrinsic CountBoundedGenus(g::RngIntElt) -> SeqEnum
+{Counts how many curves of genus up to g there are.}
+  L := ListBoundedGenusAdmissible(g);
+  return [#L[1]+5] cat [#L[i]: i in [2..#L]];
+end intrinsic;
+
+
+//************************************************//
+//                Composite Level                 //
+//************************************************//
 intrinsic InternalTriangleGroupMapExactFull(Delta::GrpPSL2Tri : Simplify := 1) -> SeqEnum
   {Returns the full quaternionic representation for Delta.}
 
@@ -437,6 +688,45 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any) -> SeqEnum
   return sigmas, Genus(sigmas), sub<Universe(sigmas) | sigmas>;
 end intrinsic;
 
-intrinsic EnumerateCompositeGenus(genus::RngIntElt) -> Any
+intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
+{Returns a list of curves X_0(a,b,c;NN) of genus bounded by genus and with NN a non-prime ideal}
+  primesList := ListBoundedGenusAdmissible(genus);
+  primesList := &cat[primesList[i] : i in [1..#primesList]];
+  primesGrouped := {[primesList[j] : j in [1..#primesList] | primesList[i][1..3] eq primesList[j][1..3]] : i in [1..#primesList]};
+  primesGrouped := Sort(SetToSequence(primesGrouped));
+  list := [[] : i in [1..(genus+1)]];
+  for dat in primesGrouped do
+    a,b,c := Explode(dat[1]);
+    print "=====";
+    print a,b,c;
+    ps := [d[4] : d in dat];
+    qs := [d[5] : d in dat];
+    xs := [d[6] : d in dat];
 
+    Delta := TriangleGroup(a,b,c);
+    E := BaseField(QuaternionAlgebra(Delta));
+    ZZE := Integers(E);
+
+    pps := [pp : pp in PrimesUpTo(Max(qs),E) | Norm(pp) in qs];
+    NNOKs := [1*ZZE];
+    while NNOKs ne [] do
+      NNOKs_frontier := [];
+      for NN in NNOKs do
+        for pp in pps do
+          NNP := NN*pp;
+          print "....   ", Norm(NNP);
+          sigmas, g := ProjectiveRamificationType(Delta, NNP);
+          if g le genus then
+            if not IsPrime(NNP) then
+              list[g+1] := Append(list[g+1],<[a,b,c],NNP>);
+              print "genus ",g," ", Norm(NNP);
+            end if;
+            Append(~NNOKs_frontier, NNP);
+          end if;
+        end for;
+      end for;
+      NNOKs := NNOKs_frontier;
+    end while;
+  end for;
+  return [Sort(SetToSequence(Set(list[i]))) : i in [1..#list]];
 end intrinsic;

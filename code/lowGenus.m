@@ -1,6 +1,6 @@
 load "matrices.m";
 load "listOrganizer.m";
-Attach("tri-congruence.m");
+// Attach("tri-congruence.m");
 
 
 //*****************************//
@@ -87,7 +87,7 @@ e_x := function(x,q)
   end if;
 end function;
 
-ramificationFromMatrix := function(M,q);
+ramificationFromMatrix := function(M,q)
   if IsIrreducible(CharacteristicPolynomial(M)) then
     // The non-split semisimple case
     return (q+1)/2;
