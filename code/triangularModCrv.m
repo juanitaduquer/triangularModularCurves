@@ -715,18 +715,29 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
       for NN in NNOKs do
         for pp in pps do
           NNP := NN*pp;
+          toCheck := false;
           if not NNP in idealsChecked then
+            if NN ne 1*ZZE then
+              if &and[(<[a,b,c],ND*pp> in &cat[list[i] : i in [1..#list]]) : ND in Divisors(NN) | ND ne NN ] then
+                toCheck := true;
+              else
+                print "The possible norms are ",[Norm(ND*pp) : ND in Divisors(NN) | ND ne NN];
+                print "one of these does not belong to ",&cat[[Norm(list[i][j][2]) : j in [1..#list[i]]]: i in [1..#list]];
+              end if;
+            else
+              toCheck := true;
+            end if;
+          end if;
+          if toCheck then
             Append(~idealsChecked,NNP);
             print "....   ", Norm(NNP);
             sigmas, g := ProjectiveRamificationType(Delta, NNP);
             if g le genus then
-              if not IsPrime(NNP) then
-                list[g+1] := Append(list[g+1],<[a,b,c],NNP>);
-                print "genus ",g," ", Norm(NNP);
-              end if;
+              list[g+1] := Append(list[g+1],<[a,b,c],NNP>);
+              print "genus ",g," ", Norm(NNP);
               Append(~NNOKs_frontier, NNP);
             end if;
-          end if;  
+          end if;
         end for;
       end for;
       NNOKs := NNOKs_frontier;
