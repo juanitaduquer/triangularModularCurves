@@ -709,20 +709,24 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
 
     pps := [pp : pp in PrimesUpTo(Max(qs),E) | Norm(pp) in qs];
     NNOKs := [1*ZZE];
+    idealsChecked := [1*ZZE];
     while NNOKs ne [] do
       NNOKs_frontier := [];
       for NN in NNOKs do
         for pp in pps do
           NNP := NN*pp;
-          print "....   ", Norm(NNP);
-          sigmas, g := ProjectiveRamificationType(Delta, NNP);
-          if g le genus then
-            if not IsPrime(NNP) then
-              list[g+1] := Append(list[g+1],<[a,b,c],NNP>);
-              print "genus ",g," ", Norm(NNP);
+          if not NNP in idealsChecked then
+            Append(~idealsChecked,NNP);
+            print "....   ", Norm(NNP);
+            sigmas, g := ProjectiveRamificationType(Delta, NNP);
+            if g le genus then
+              if not IsPrime(NNP) then
+                list[g+1] := Append(list[g+1],<[a,b,c],NNP>);
+                print "genus ",g," ", Norm(NNP);
+              end if;
+              Append(~NNOKs_frontier, NNP);
             end if;
-            Append(~NNOKs_frontier, NNP);
-          end if;
+          end if;  
         end for;
       end for;
       NNOKs := NNOKs_frontier;
