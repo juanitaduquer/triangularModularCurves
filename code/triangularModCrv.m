@@ -694,7 +694,7 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
   primesList := &cat[primesList[i] : i in [1..#primesList]];
   primesGrouped := {[primesList[j] : j in [1..#primesList] | primesList[i][1..3] eq primesList[j][1..3]] : i in [1..#primesList]};
   primesGrouped := Sort(SetToSequence(primesGrouped));
-  list := [[] : i in [1..(genus+1)]];
+  list := [*[**] : i in [1..(genus+1)]*];
   for dat in primesGrouped do
     a,b,c := Explode(dat[1]);
     print "=====";
@@ -717,12 +717,11 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
           NNP := NN*pp;
           toCheck := false;
           if not NNP in idealsChecked then
-            if NN ne 1*ZZE then
-              if &and[(<[a,b,c],ND*pp> in &cat[list[i] : i in [1..#list]]) : ND in Divisors(NN) | ND ne NN ] then
+            if NN ne 1*ZZE or Degree(ZZE) ne 1 then
+              if &and[(&or[&or[[*[a,b,c],ND*pp*] eq list[i][j] : j in [1..#list[i]]] : i in [1..#list]]) : ND in Divisors(NN) | ND ne NN ] then
                 toCheck := true;
               else
-                print "The possible norms are ",[Norm(ND*pp) : ND in Divisors(NN) | ND ne NN];
-                print "one of these does not belong to ",&cat[[Norm(list[i][j][2]) : j in [1..#list[i]]]: i in [1..#list]];
+                print "Not low g";
               end if;
             else
               toCheck := true;
@@ -733,7 +732,7 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
             print "....   ", Norm(NNP);
             sigmas, g := ProjectiveRamificationType(Delta, NNP);
             if g le genus then
-              list[g+1] := Append(list[g+1],<[a,b,c],NNP>);
+              list[g+1] := Append(list[g+1],[*[a,b,c],NNP*]);
               print "genus ",g," ", Norm(NNP);
               Append(~NNOKs_frontier, NNP);
             end if;
