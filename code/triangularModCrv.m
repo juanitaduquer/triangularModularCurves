@@ -688,6 +688,17 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any) -> SeqEnum
   return sigmas, Genus(sigmas), sub<Universe(sigmas) | sigmas>;
 end intrinsic;
 
+intrinsic DeleteDuplicates(L::List) -> List
+{Deletes repeated entries}
+  new := [];
+  for x in L do
+    if not &or[new[j] eq x : j in [1..#new]] then
+      Append(~new,x);
+    end if;
+  end for;
+  return new;
+end intrinsic;
+
 intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
 {Returns a list of curves X_0(a,b,c;NN) of genus bounded by genus and with NN a non-prime ideal}
   primesList := ListBoundedGenusAdmissible(genus);
@@ -742,5 +753,5 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
       NNOKs := NNOKs_frontier;
     end while;
   end for;
-  return [Sort(SetToSequence(Set(list[i]))) : i in [1..#list]];
+  return [*DeleteDuplicates(list[i]) : i in [1..#list]*];
 end intrinsic;
