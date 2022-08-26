@@ -717,7 +717,7 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
           NNP := NN*pp;
           toCheck := false;
           if not NNP in idealsChecked then
-            if NN ne 1*ZZE or Degree(ZZE) ne 1 then
+            if NN ne 1*ZZE and Degree(E) ne 1 then
               if &and[(&or[&or[[*[a,b,c],ND*pp*] eq list[i][j] : j in [1..#list[i]]] : i in [1..#list]]) : ND in Divisors(NN) | ND ne NN ] then
                 toCheck := true;
               else
