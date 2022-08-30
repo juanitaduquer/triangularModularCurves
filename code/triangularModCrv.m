@@ -738,7 +738,7 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
               toCheck := true;
             end if;
           end if;
-          if toCheck then
+          if toCheck and not ([a,b,c] eq [3,3,5] and Norm(pp) ne 5) then
             Append(~idealsChecked,NNP);
             print "....   ", Norm(NNP);
             sigmas, g := ProjectiveRamificationType(Delta, NNP);
