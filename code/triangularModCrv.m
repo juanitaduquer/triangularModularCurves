@@ -603,6 +603,15 @@ intrinsic RamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0) -> SeqEn
   return sigmas, Genus(sigmas), Image(mpermp0);
 end intrinsic;
 
+// intrinsic QuotientH1 := (Delta::GrpPSL2Tri,E::Any, NN::Any) -> SeqEnum, Any
+//   iota := InternalTriangleGroupMapExactFull(Delta);
+//   B := Codomain(iota);
+//   F := BaseField(B);
+//   ZZF := Integers(F);
+//   ZZE := Order(NN);
+//   _:=IsSubfield(E,F);
+//   ZZFmodNN, modNN := quo<ZZF | Generators(NN)>;
+// end intrinsic;
 
 intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any) -> SeqEnum
   {Returns the cycle type of the ramification above 0,1,oo}
@@ -742,6 +751,8 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
             Append(~idealsChecked,NNP);
             print "....   ", Norm(NNP);
             sigmas, g := ProjectiveRamificationType(Delta, NNP);
+            sigmas2,g2:= RamificationType(Delta, NNP);
+            print "????", g eq g2;
             if g le genus then
               list[g+1] := Append(list[g+1],[*[a,b,c],NNP*]);
               print "genus ",g," ", Norm(NNP);
