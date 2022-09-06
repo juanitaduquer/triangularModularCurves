@@ -591,7 +591,7 @@ intrinsic RamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0) -> SeqEn
   end if;
 
   // need only one!
-  assert #mpermp0s eq 1;
+  // assert mpermp0s eq 1;
   mpermp0 := mpermp0s[1];
   kermpermp0 := Kernel(mpermp0);
   if GammaType eq 0 then
