@@ -751,7 +751,7 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
             Append(~idealsChecked,NNP);
             print "....   ", Norm(NNP);
             // sigmas, g := ProjectiveRamificationType(Delta, NNP);
-            sigmas,g:= RamificationType(Delta, NNP:GammaType :=1);
+            sigmas,g:= RamificationType(Delta, NNP:GammaType :=0);
             if g le genus then
               list[g+1] := Append(list[g+1],[*[a,b,c],NNP*]);
               print "genus ",g," ", Norm(NNP);
