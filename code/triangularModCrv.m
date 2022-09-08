@@ -445,7 +445,7 @@ intrinsic RamificationTypeF(Delta::GrpPSL2Tri, NN::RngOrdIdl : Al := "MinDegree"
   F := BaseField(B);
   ZZF := Integers(F);
   O := Order([iota(Delta.i) : i in [1..3]]);
-  Omax := MaximalOrder(O);
+  // Omax := MaximalOrder(O);
   bbeta := Discriminant(O);
 
   ZZE := Order(NN);
@@ -465,7 +465,7 @@ intrinsic RamificationTypeF(Delta::GrpPSL2Tri, NN::RngOrdIdl : Al := "MinDegree"
     e := PPfact[2];
     assert Norm(bbeta + PP) eq 1;  // must be coprime
     // assert Valuation(ZZF!!ddFE,PP) eq 0;
-    BPP, phiPP, mPP := pMatrixRing(Omax,PP);
+    BPP, phiPP, mPP := pMatrixRing(O,PP); //This is where Omax lives.
     Append(~phiPPs, phiPP);
     Append(~mPPs, mPP);
   end for;
@@ -515,7 +515,7 @@ intrinsic RamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0) -> SeqEn
   F := BaseField(B);
   ZZF := Integers(F);
   O := Order([iota(Delta.i) : i in [1..3]]);
-  Omax := MaximalOrder(O);
+  // Omax := MaximalOrder(O);
   bbeta := Discriminant(O);
 
   ZZE := Order(NN);
@@ -539,7 +539,7 @@ intrinsic RamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0) -> SeqEn
     e := PPfact[2];
     assert Norm(bbeta + PP) eq 1;  // must be coprime
     assert Valuation(ZZF!!ddFE,PP) eq 0;
-    BPP, phiPP, mPP := pMatrixRing(Omax,PP);
+    BPP, phiPP, mPP := pMatrixRing(O,PP); //This is where Omax lives.
     Append(~phiPPs, phiPP);
     Append(~mPPs, mPP);
   end for;
@@ -591,7 +591,7 @@ intrinsic RamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0) -> SeqEn
   end if;
 
   // need only one!
-  // assert mpermp0s eq 1;
+  // assert mpermp0s eq 1;  Investigate this bug
   mpermp0 := mpermp0s[1];
   kermpermp0 := Kernel(mpermp0);
   if GammaType eq 0 then
@@ -603,15 +603,17 @@ intrinsic RamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0) -> SeqEn
   return sigmas, Genus(sigmas), Image(mpermp0);
 end intrinsic;
 
-// intrinsic QuotientH1 := (Delta::GrpPSL2Tri,E::Any, NN::Any) -> SeqEnum, Any
-//   iota := InternalTriangleGroupMapExactFull(Delta);
-//   B := Codomain(iota);
-//   F := BaseField(B);
-//   ZZF := Integers(F);
-//   ZZE := Order(NN);
-//   _:=IsSubfield(E,F);
-//   ZZFmodNN, modNN := quo<ZZF | Generators(NN)>;
-// end intrinsic;
+intrinsic OrderPXL(M::Any,bound::Any)->Any
+{Returns the order of the matrix when thought in PXL}
+  matrix := M;
+  for ord in [1..bound] do
+    if matrix[1][1] eq matrix[2][2] and matrix[1][2] eq matrix[2][1] and matrix[1][2] eq 0 then
+      return ord;
+    end if;
+    matrix *:= M;
+  end for;
+  return -1;
+end intrinsic;
 
 intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any) -> SeqEnum
   {Returns the cycle type of the ramification above 0,1,oo}
@@ -680,6 +682,11 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any) -> SeqEnum
                                  ppes) : i in [1..4]];
     Append(~deltamatsmodNN, [modNN(a) : a in deltamatseq]);
   end for;
+
+  print "Triangle group, ",DefiningABC(Delta),". Norm of the ideal ", Factorization(Norm(NN)),". Orders: ",[OrderPXL(Matrix(2,2,d),1000) : d in deltamatsmodNN];
+  if [OrderPXL(Matrix(2,2,d),1000) : d in deltamatsmodNN] ne DefiningABC(Delta) then
+    print "HERE!!!!!!!", "Triangle group, ",DefiningABC(Delta),". Norm of the ideal ", Factorization(Norm(NN)),". Orders: ",[OrderPXL(Matrix(2,2,d),1000) : d in deltamatsmodNN];
+  end if;
 
   reps, red := ProjectiveLine(ZZEmodNN);
   cosetaction := function(alpha);
@@ -750,8 +757,9 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
           if toCheck then
             Append(~idealsChecked,NNP);
             print "....   ", Norm(NNP);
-            // sigmas, g := ProjectiveRamificationType(Delta, NNP);
-            sigmas,g:= RamificationType(Delta, NNP:GammaType :=0);
+            // INSERT p's!!!!!!!!!
+            sigmas, g := ProjectiveRamificationType(Delta, NNP);
+            // sigmas,g:= RamificationType(Delta, NNP:GammaType :=0);
             if g le genus then
               list[g+1] := Append(list[g+1],[*[a,b,c],NNP*]);
               print "genus ",g," ", Norm(NNP);
