@@ -20,6 +20,10 @@ S,CongruenceImage,Computes the image of reduction modulo NN on the triangle grou
 S,RamificationTypeF,"Returns the cycle type of the ramification above 0,1,oo",0,2,0,0,0,0,0,0,0,217,,0,0,GrpPSL2Tri,,82,-38,-38,-38,-38,-38
 S,RamificationType,"Returns the cycle type of the ramification above 0,1,oo; GammaType is either 0 or 1",0,2,0,0,0,0,0,0,0,-1,,0,0,GrpPSL2Tri,,82,-38,-38,-38,-38,-38
 S,OrderPXL,Returns the order of the matrix when thought in PXL,0,2,0,0,0,0,0,0,0,-1,,0,0,-1,,-1,-38,-38,-38,-38,-38
-S,ProjectiveRamificationType,"Returns the cycle type of the ramification above 0,1,oo",0,2,0,0,0,0,0,0,0,-1,,0,0,GrpPSL2Tri,,82,-38,-38,-38,-38,-38
+S,SameSquareClass,Returns true if x and y differ by a square,0,2,0,0,0,0,0,0,0,-1,,0,0,-1,,36,-38,-38,-38,-38,-38
+S,EquivModH1,Returns true if M1 and M2 are equivalent modulo H1,0,2,0,0,0,0,0,0,0,-1,,0,0,-1,,36,-38,-38,-38,-38,-38
+S,FindMatrixH1,Returns a matrix in the class,0,2,0,0,0,0,0,0,0,-1,,0,0,-1,,-1,-38,-38,-38,-38,-38
+S,H1QuotientReps,Returns matrix representatives for GN/H1 and a map to those representatives,0,1,0,0,0,0,0,0,0,-1,,-1,-1,-38,-38,-38,-38
+S,ProjectiveRamificationType,"Returns the cycle type of the ramification above 0,1,oo; GammaType is either 0 or 1",0,2,0,0,0,0,0,0,0,-1,,0,0,GrpPSL2Tri,,36,82,-38,-38,-38,-38
 S,DeleteDuplicates,Deletes repeated entries,0,1,0,0,0,0,0,0,0,168,,168,-38,-38,-38,-38,-38
 S,EnumerateCompositeLevel,"Returns a list of curves X_0(a,b,c;NN) of genus bounded by genus and with NN a non-prime ideal",0,1,0,0,0,0,0,0,0,148,,-1,-38,-38,-38,-38,-38

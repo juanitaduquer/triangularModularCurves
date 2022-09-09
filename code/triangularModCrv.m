@@ -615,8 +615,49 @@ intrinsic OrderPXL(M::Any,bound::Any)->Any
   return -1;
 end intrinsic;
 
-intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any) -> SeqEnum
-  {Returns the cycle type of the ramification above 0,1,oo}
+intrinsic SameSquareClass(x::Any,y::Any) -> BoolElt
+{Returns true if x and y differ by a square}
+  return true;
+end intrinsic;
+
+intrinsic EquivModH1(M1::Any,M2::Any) ->BoolElt
+{Returns true if M1 and M2 are equivalent modulo H1}
+  return (SameSquareClass(Determinant(M1),Determinant(M2))) and ((M1[1][1] eq M2[1][1] and M1[2][1] eq M2[2][1]) or (M1[1][1] eq -M2[1][1] and M1[2][1] eq -M2[2][1]));
+end intrinsic;
+
+intrinsic FindMatrixH1(ZZEmodNN::Any,x::Any) ->Any
+{Returns a matrix in the class}
+  for y in CartesianPower(ZZEmodNN,2) do
+    if (x[1]*y[2]-y[1]*x[2]) eq x[3] then
+      return Matrix([[x[1],y[1]],[x[2],y[2]]]);
+    end if;
+  end for;
+end intrinsic;
+
+intrinsic H1QuotientReps(ZZEmodNN::Any) -> Any, Any
+{Returns matrix representatives for GN/H1 and a map to those representatives}
+  reps := [];
+  repsSq := [];
+  for x in ZZEmodNN do
+    if not &or[SameSquareClass(x,y): y in repsSq] then
+      Append(~repsSq,x);
+    end if;
+  end for;
+  for x in CartesianPower(ZZEmodNN,2) do
+    if [x[1],x[2]] ne [ZZEmodNN!0,ZZEmodNN!0] then
+      for sq in repsSq do
+        M := FindMatrixH1(ZZEmodNN,<x[1],x[2],sq>);
+        if #[Mat: Mat in reps | EquivModH1(Mat,M)] eq 0 then
+          Append(~reps,M);
+        end if;
+      end for;
+    end if;
+  end for;
+  return reps;
+end intrinsic;
+
+intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0) -> BoolElt, SeqEnum
+  {Returns the cycle type of the ramification above 0,1,oo; GammaType is either 0 or 1}
 
   if Norm(NN) eq 1 then
     GNN := Sym(1);
@@ -633,11 +674,10 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any) -> SeqEnum
   if basefieldeqQQ then
     E := RationalsAsNumberField();
     ZZE := Integers(E);
-    O := QuaternionOrder([x*y : x,y in Oseq]);
+    OLambda := QuaternionOrder([x*y : x,y in Oseq]);
   else
-    O := Order([x*y : x,y in Oseq]);
+    OLambda := Order([x*y : x,y in Oseq]);
   end if;
-  Omax := O;
 
   NNfact := Factorization(ZZE!!NN);
   phipps := [* *];
@@ -646,17 +686,15 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any) -> SeqEnum
     pp := ppfact[1];
     e := ppfact[2];
     if basefieldeqQQ then
-      if Valuation(ZZE!Discriminant(Omax),pp) ne 0 and HilbertSymbol(A,pp) eq 1 then
-        Omax := pMaximalOrder(Omax, pp);
+      if Valuation(ZZE!Discriminant(OLambda),pp) ne 0 then
+        return false,_,_,_;
       end if;
-      assert Valuation(ZZE!Discriminant(Omax),pp) eq 0;  // must be coprime
-      App, phipp, mpp := pMatrixRing(Omax,Norm(pp));
+      App, phipp, mpp := pMatrixRing(OLambda,Norm(pp));
     else
-      if Valuation(Discriminant(Omax),pp) ne 0 and HilbertSymbol(A,pp) eq 1 then
-        Omax := pMaximalOrder(Omax, pp);
+      if Valuation(Discriminant(OLambda),pp) ne 0 then
+        return false,_,_,_;
       end if;
-      assert Valuation(Discriminant(Omax),pp) eq 0;  // must be coprime
-      App, phipp, mpp := pMatrixRing(Omax,pp);
+      App, phipp, mpp := pMatrixRing(OLambda,pp);
     end if;
     Append(~phipps, phipp);
     Append(~mpps, mpp);
@@ -701,7 +739,7 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any) -> SeqEnum
 
   sigmas := [cosetaction(d) : d in deltamatsmodNN];
 
-  return sigmas, Genus(sigmas), sub<Universe(sigmas) | sigmas>;
+  return true, sigmas, Genus(sigmas), sub<Universe(sigmas) | sigmas>;
 end intrinsic;
 
 intrinsic DeleteDuplicates(L::List) -> List
@@ -759,6 +797,17 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
             print "....   ", Norm(NNP);
             // INSERT p's!!!!!!!!!
             sigmas, g := ProjectiveRamificationType(Delta, NNP);
+            p := Factorization(Norm(pp))[1][1];
+            if not IsPrime(NNP) then
+              for mult in CartesianPower([1,p],3) do
+                Deltap := TriangleGroup(a*mult[1],b*mult[2],c*mult[3]);
+                Ep := BaseField(QuaternionAlgebra(Deltap));
+                _ := IsSubfield(E,Ep);
+                ZZEp := Integers(Ep);
+                NNPp := [N :N in IdealsUpTo(Norm(NNP),ZZEp)|Norm(N) eq Norm(NNP)][1];
+                _, _ := ProjectiveRamificationType(Deltap, NNPp);
+              end for;
+            end if;
             // sigmas,g:= RamificationType(Delta, NNP:GammaType :=0);
             if g le genus then
               list[g+1] := Append(list[g+1],[*[a,b,c],NNP*]);
