@@ -12,7 +12,7 @@ allRootsList := function(order,F)
   return list;
 end function;
 
-orderPXL := function(M,q,bound)
+orderPXL := function(M,bound)
 // Returns the order of the matrix when thought in PXL
   matrix := M;
   for ord in [1..bound] do
