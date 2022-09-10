@@ -683,8 +683,6 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
             if NN ne 1*ZZE and Degree(E) ne 1 then
               if &and[(&or[&or[[*[a,b,c],ND*pp*] eq list[i][j] : j in [1..#list[i]]] : i in [1..#list]]) : ND in Divisors(NN) | ND ne NN ] then
                 toCheck := true;
-              else
-                print "Not low g";
               end if;
             else
               toCheck := true;
@@ -713,14 +711,26 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
                   checked cat:= SetToSequence(Set([[pr[1][1],pr[2][1],pr[3][1]] : pr in Per]));
                   Deltap := TriangleGroup(ap,bp,cp);
                   Ep := BaseField(QuaternionAlgebra(Deltap));
-                  _ := IsSubfield(E,Ep);
+                  n := &*[Generator(primePP[1] meet Integers())^primePP[2]:primePP in Factorization(NNP)];
                   ZZEp := Integers(Ep);
-                  NNPp := ZZEp!!NNP;
-                  print "About to check", ap,bp,cp;
-                  boolp, _,gp := ProjectiveRamificationType(Deltap, NNPp);
-                  if boolp and gp le genus then
-                    list[gp+1] := Append(list[gp+1],[*[ap,bp,cp],NNP*]);
-                  end if;
+                  NNPps := [1*ZZEp];
+                  for fac in Factorization(n) do
+                    for i in [1..fac[2]] do
+                      newNNPps := [];
+                      for P in PrimeIdealsOverPrime(Ep,fac[1]) do
+                        for prN in NNPps do
+                          Append(~newNNPps,prN*P);
+                        end for;
+                      end for;
+                      NNPps := SetToSequence(Set(newNNPps));
+                    end for;
+                  end for;
+                  for NNPp in NNPps do
+                    boolp, _,gp := ProjectiveRamificationType(Deltap, NNPp);
+                    if boolp and gp le genus then
+                      list[gp+1] := Append(list[gp+1],[*[ap,bp,cp],NNP*]);
+                    end if;
+                  end for;
                 end if;
               end for;
             end if;
