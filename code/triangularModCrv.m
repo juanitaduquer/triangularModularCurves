@@ -752,13 +752,10 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
   end function;
 
   cosetactionH1 := function(alpha,reps);
-    print "I am computing another sigma";
     delt := Matrix(2,2,alpha);
     bool,sq := IsSquareQuot(Determinant(delt));
-    print "det1", Determinant(delt);
     if bool then
       delt := Matrix(2,2,[alpha[i]*sq^(-1):i in [1..#alpha]]);
-      print "Now", Determinant(delt);
       print [delt^s : s in DefiningABC(Delta)];
     end if;
     seq := [];
@@ -766,9 +763,6 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
       alpp := delt*reps[i];
       M := FindEquivModH1(alpp,reps);
       Append(~seq, Index(reps, M));
-      if Index(reps, M) eq i then
-        print "one";
-      end if;
     end for;
     print seq;
     return Sym(#reps)!seq;
