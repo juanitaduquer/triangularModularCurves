@@ -464,8 +464,8 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
   B := Codomain(iota);
   F := BaseField(B);
   ZZF := Integers(F);
-  _ := IsSubfield(E,F);
   if Degree(E) lt Degree(F) then
+    _ := IsSubfield(E,F);
     if Type(E) eq FldRat then
       ddFE := Discriminant(Integers(RelativeField(E,F)))*ZZE;
     else
@@ -617,7 +617,21 @@ intrinsic ListBoundedGenusAdmissible(genus::RngIntElt) -> SeqEnum
       end for;
     end for;
   end for;
-  return [LexOrderABC(list[i]):i in [1..genus+1]];
+  newList := [[]:i in [0..genus]];
+  for i in [1..#list] do
+    L := list[i];
+    for j in [1..#L] do
+      t := L[j];
+      Delta := TriangleGroup(t[1],t[2],t[3]);
+      pp := Factorization(t[4]*Integers(BaseField(QuaternionAlgebra(Delta))))[1][1];
+      bool,_,g,_ := ProjectiveRamificationType(Delta,pp);
+      if bool then
+        assert g eq (i-1);
+        Append(~newList[i],t);
+      end if;
+    end for;
+  end for;
+  return [LexOrderABC(newList[i]): i in [1..genus+1]];
 end intrinsic;
 
 intrinsic CountBoundedGenus(g::RngIntElt) -> SeqEnum
@@ -711,7 +725,7 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
               end for;
             end if;
             // sigmas,g:= RamificationType(Delta, NNP:GammaType :=0);
-            if g le genus and bool then
+            if bool and g le genus then
               list[g+1] := Append(list[g+1],[*[a,b,c],NNP*]);
               print "genus ",g," ", Norm(NNP);
               Append(~NNOKs_frontier, NNP);
