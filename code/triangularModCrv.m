@@ -171,449 +171,190 @@ intrinsic IsQAdmissible(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::RngIntElt, q::
   return &and[((q+1) mod s)*((q-1) mod s) eq 0 or s eq p : s in [a,b,c]];
 end intrinsic;
 
-intrinsic IspSplit(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::RngIntElt, q::RngIntElt) ->BoolElt
-{True if the prime pp divides beta.}
-  if 2*a*b*c mod p ne 0 then
-    return true;
-  else
-    m := Lcm([a,b,c]);
-    twom := 2*m;
-    twom div:= p^Valuation(twom,p);
-    if twom eq 1 then
-      power := 1;
-    else
-      power := Order(q,twom);
-    end if;
-    bigPower := q^power;
-    k := GF(bigPower);
-    twoap,twobp,twocp := Explode([(2*s) div (p^Valuation(2*s,p)) : s in [a,b,c]]);
-    zeta_twom := PrimitiveElement(k)^((bigPower-1) div twom);
-    for i in [i:i in [1..twom]|Gcd(i,twom) eq 1] do
-      z := zeta_twom^i;
-      z2a,z2b,z2c := Explode([z^(twom div twos) : twos in [twoap,twobp,twocp]]);
-      l2a, l2b, l2c := Explode([z2a + 1/z2a, z2b + 1/z2b, z2c + 1/z2c]);
-      if (l2a^2 + l2b^2 + l2c^2 - l2a*l2b*l2c - 4) ne 0 then
-        return true;
-      end if;
-    end for;
-    return false;
-  end if;
-end intrinsic;
-
-//************************************************//
-//                  Enumeration                   //
-//************************************************//
-intrinsic ListBoundedGenusAdmissible(genus::RngIntElt) -> SeqEnum
-{Returns the list (organized by genus in ascending order) of lists (a,b,c;p) such that the curve X_0(a,b,c;pp) have genus bounded by g and pp is a prime of norm p}
-  list := [[]:i in [0..genus]];
-  boundq := QMax(genus);
-  powers := [ n : n in [2..boundq] | IsPrimePower(n) ];
-  for q in powers do
-    possibilities := Set(PrimeDivisors(q) cat Divisors(q+1) cat Divisors(q-1));
-    Exclude(~possibilities,1);
-    p := PrimeDivisors(q)[1];
-    possibilities := Sort(SetToSequence(possibilities));
-    // print "Possibilities for q=",q," are ",possibilities;
-    for i in [1..#possibilities] do
-      a := possibilities[i];
-      for j in [i..#possibilities] do
-        b := possibilities[j];
-        cbound := CBound(a,b,q,genus);
-        for k in [j..#possibilities] do
-          c := possibilities[k];
-          if c le cbound and IsHyperbolicTriple(a,b,c) and IsQAdmissible(a,b,c,p,q) then
-            qFromGroup, pm := Explode(GroupForABC(a,b,c,p));
-            if q eq qFromGroup and IspSplit(a,b,c,p,q) then
-              // print a,b,c;
-              g := GenusTriangularModularCurve(a,b,c,p:q:=q,pm:=pm);
-              // print "genus", g;
-              if g le genus then
-                Append(~list[Integers()!(g+1)],[a,b,c,p,q,pm]);
-              end if;
-            end if;
-          end if;
-        end for;
-      end for;
-    end for;
-  end for;
-  return [LexOrderABC(list[i]):i in [1..genus+1]];
-end intrinsic;
-
-intrinsic CountBoundedGenus(g::RngIntElt) -> SeqEnum
-{Counts how many curves of genus up to g there are.}
-  L := ListBoundedGenusAdmissible(g);
-  return [#L[1]+5] cat [#L[i]: i in [2..#L]];
-end intrinsic;
-
-
 //************************************************//
 //                Composite Level                 //
 //************************************************//
-intrinsic InternalTriangleGroupMapExactFull(Delta::GrpPSL2Tri : Simplify := 1) -> SeqEnum
-  {Returns the full quaternionic representation for Delta.}
-
-  require IsTriangleGroup(Delta) : "Must be triangle group";
-
-  a,b,c := Explode(DefiningABC(Delta));
-  m := Lcm([a,b,c]);
-  K<z2m> := CyclotomicField(2*m);
-  z2a := z2m^(m div a);
-  z2b := z2m^(m div b);
-  z2c := z2m^(m div c);
-  l2a := z2a+1/z2a;
-  l2b := z2b+1/z2b;
-  l2c := z2c+1/z2c;
-  if Simplify ge 1 then
-    F := sub<K | [l2a,l2b,l2c]>;
-    if F cmpeq Rationals() then
-      ZF := Integers();
-    else
-      OF := EquationOrder(F);
-      ZF := MaximalOrder(OF : Ramification := PrimeDivisors(m));
-      _, ZF := OptimizedRepresentation(ZF);
-    end if;
-    F<w> := NumberField(ZF);
-  else
-    F<w> := sub<K | [z2m+1/z2m]>;
-  end if;
-  l2a := F!l2a;
-  l2b := F!l2b;
-  l2c := F!l2c;
-
-  if Simplify ge 1 then
-    OF := EquationOrder(F);
-    ZZF := MaximalOrder(OF : Ramification := PrimeDivisors(m));
-    bl, ZZFop := OptimizedRepresentation(ZZF);
-    if bl then
-      Fop := NumberField(ZZFop);
-    else
-      Fop := F;
-    end if;
-  else
-    Fop := F;
-  end if;
-
-  Ffree<fa,fb,fc> := FreeAlgebra(Fop, 3);
-  B<fa,fb,fc> := quo<Ffree |
-                fa^2 - l2a*fa + 1,
-                fb^2 - l2b*fb + 1,
-                fc^2 - l2c*fc + 1,
-                fa*fb - l2c + fc,
-                fb*fc - l2a + fa,
-                fc*fa - l2b + fb,
-                fb*fa - l2b*fa - l2a*fb - fc + l2a*l2b,
-                fc*fb - l2c*fb - l2b*fc - fa + l2b*l2c,
-                fa*fc - l2a*fc - l2c*fa - fb + l2c*l2a>;
-
-  Bass, mass := Algebra(B);
-
-  bl, Bquat, mquat := IsQuaternionAlgebra(Bass);
-  assert bl;
-
-  faquat := mquat(mass(fa));
-  fbquat := mquat(mass(fb));
-  fcquat := mquat(mass(fc));
-
-  // when integrated into the package, cache
-  iota := Delta`TriangleGroupMap^-1*
-	                           map<Delta`TriangleGroup -> Bquat |
-                  x :-> &*([Bquat!1] cat [[faquat,fbquat,fcquat][Abs(s)]^Sign(s) : s in Eltseq(x)])>;
-
-  return iota;
-end intrinsic;
-
-intrinsic CongruenceImage(Delta::GrpPSL2Tri, NN::Any) -> Map, Grp
-  {Computes the image of reduction modulo NN on the triangle group Delta.}
-
-  /*
-  F<l2a,l2b,l2c> := FunctionField(Rationals(),3);
-  Ffree<fa,fb,fc> := FreeAlgebra(F, 3);
-  B<fa,fb,fc> := quo<Ffree |
-				  fa^2 - l2a*fa + 1,
-				  fb^2 - l2b*fb + 1,
-				  fc^2 - l2c*fc + 1,
-				  fa*fb - l2c + fc,
-				  fb*fc - l2a + fa,
-				  fc*fa - l2b + fb,
-				  fb*fa - l2b*fa - l2a*fb - fc + l2a*l2b,
-				  fc*fb - l2c*fb - l2b*fc - fa + l2b*l2c,
-				  fa*fc - l2a*fc - l2c*fa - fb + l2c*l2a>;
-  Bass, mass := Algebra(B);
-  Eltseq(iota(mass(fa))), Eltseq(iota(mass(fa))), Eltseq(iota(mass(fa)));
-  */
-
-  a,b,c := Explode(DefiningABC(Delta));
-  m := Lcm([a,b,c]);
-  K<z2m> := CyclotomicField(2*m);
-  z2a := z2m^(m div a);
-  z2b := z2m^(m div b);
-  z2c := z2m^(m div c);
-  l2a := z2a+1/z2a;
-  l2b := z2b+1/z2b;
-  l2c := z2c+1/z2c;
-  F := sub<K | [l2a,l2b,l2c]>;
-  if F cmpeq Rationals() then
-    F := RationalsAsNumberField();
-	ZZF := Integers(F);
-  else
-	OF := EquationOrder(F);
-	ZZF := MaximalOrder(OF : Ramification := PrimeDivisors(m));
-	_, ZZF := OptimizedRepresentation(ZZF);
-  end if;
-  F<w> := NumberField(ZZF);
-  l2a := ZZF!l2a;
-  l2b := ZZF!l2b;
-  l2c := ZZF!l2c;
-
-  daelt := [
-				0,
-				0,
-				0,
-				1,
-				l2b,
-				0,
-				-1,
-				0,
-				-l2a*l2b,
-				1,
-				l2a,
-				l2b,
-				-1,
-				0,
-				0,
-				l2a
-		    ];
-  dbelt := [
-				0,
-				0,
-				1,
-				0,
-				-l2b*l2c,
-				l2b,
-				l2c,
-				1,
-				-1,
-				0,
-				l2b,
-				0,
-				l2c,
-				-1,
-				0,
-				0
-			];
-  dcelt := [
-			  0,
-			  1,
-			  0,
-			  0,
-			  -1,
-			  l2c,
-			  0,
-			  0,
-			  l2a,
-			  0,
-			  0,
-			  -1,
-			  -l2a*l2c,
-			  l2a,
-			  1,
-			  l2c
-		  ];
-
-  ZZE := Order(NN);
-  E := NumberField(ZZE);
-  _ := IsSubfield(E,F);
-
-  ZZFmodNN, modNN := quo<ZZF | Generators(NN)>;
-  gensDeltamodNN := [[ZZFmodNN | -1,0,0,0,0,-1,0,0,0,0,-1,0,0,0,0,-1]] cat
-                      [[modNN(a) : a in dselt] : dselt in [daelt,dbelt,dcelt]];
-  pmGNN := MatrixGroup<4, ZZFmodNN | gensDeltamodNN>;
-  return pmGNN;
-end intrinsic;
-
-
-intrinsic RamificationTypeF(Delta::GrpPSL2Tri, NN::RngOrdIdl : Al := "MinDegree") -> SeqEnum
-  {Returns the cycle type of the ramification above 0,1,oo.}
-
-  if Norm(NN) eq 1 then
-    GNN := Sym(1);
-    return [Id(GNN) : i in [1..3]], 0, GNN;
-  end if;
-
-  iota := InternalTriangleGroupMapExactFull(Delta);
-  B := Codomain(iota);
-  F := BaseField(B);
-  ZZF := Integers(F);
-  O := Order([iota(Delta.i) : i in [1..3]]);
-  // Omax := MaximalOrder(O);
-  bbeta := Discriminant(O);
-
-  ZZE := Order(NN);
-  E := NumberField(ZZE);
-  if Degree(E) lt Degree(F) then
-    _ := IsSubfield(E,F);
-    ddFE := ZZE!!Discriminant(Integers(RelativeField(E,F)));
-  else
-    ddFE := 1*ZZE;
-  end if;
-
-  NNfact := Factorization(ZZF!!NN);
-  phiPPs := [* *];
-  mPPs := [* *];
-  for PPfact in NNfact do
-    PP := PPfact[1];
-    e := PPfact[2];
-    assert Norm(bbeta + PP) eq 1;  // must be coprime
-    // assert Valuation(ZZF!!ddFE,PP) eq 0;
-    BPP, phiPP, mPP := pMatrixRing(O,PP); //This is where Omax lives.
-    Append(~phiPPs, phiPP);
-    Append(~mPPs, mPP);
-  end for;
-  PPes := [PPfact[1]^PPfact[2] : PPfact in NNfact];
-
-  ZZFmodNN, modNN := quo<ZZF | Generators(NN)>;
-
-  deltamatsmodNN := [];
-  for i := 1 to 3 do
-    delta := iota(Delta.i);
-    deltaPPmats := [* Eltseq(phiPP(delta)) : phiPP in phiPPs *];
-    deltamatseq := [ CRT([ZZF | deltaPPmats[j][i]@@mPPs[j] : j in [1..#deltaPPmats]],
-                               PPes) : i in [1..4]];
-    Append(~deltamatsmodNN, [modNN(a) : a in deltamatseq]);
-  end for;
-
-  GNN := MatrixGroup<2, ZZFmodNN | deltamatsmodNN cat [[-1,0,0,-1]]>;
-
-  if Al eq "MinDegree" then
-    mperm, GNNperm := PermutationRepresentation(GNN);
-    if #Generators(GNN) eq 3 then
-      m1 := Id(GNN);
-    else
-      m1 := mperm(GNN.4);
-    end if;
-    GNNpermp, mpermp := quo<GNNperm | m1>;
-    mpermp0, GNNpermp0 := MinimalDegreePermutationRepresentation(GNNpermp);
-    sigmas := [GNNpermp0.i : i in [1..3]];
-  elif Al eq "Compute0" then
-    H0 := sub<GNN | [x : x in GNN | x[2,1] eq 0]>;
-  end if;
-
-  return sigmas, Genus(sigmas), GNNpermp0;
-end intrinsic;
-
-
-intrinsic RamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0) -> SeqEnum
-  {Returns the cycle type of the ramification above 0,1,oo; GammaType is either 0 or 1}
-
-  if Norm(NN) eq 1 then
-    GNN := Sym(1);
-    return [Id(GNN) : i in [1..3]], 0, GNN;
-  end if;
-
-  iota := InternalTriangleGroupMapExactFull(Delta);
-  B := Codomain(iota);
-  F := BaseField(B);
-  ZZF := Integers(F);
-  O := Order([iota(Delta.i) : i in [1..3]]);
-  // Omax := MaximalOrder(O);
-  bbeta := Discriminant(O);
-
-  ZZE := Order(NN);
-  E := NumberField(ZZE);
-  _ := IsSubfield(E,F);
-  if Degree(E) lt Degree(F) then
-    if Type(E) eq FldRat then
-      ddFE := Discriminant(Integers(RelativeField(E,F)))*ZZE;
-    else
-      ddFE := ZZE!!Discriminant(Integers(RelativeField(E,F)));
-    end if;
-  else
-    ddFE := 1*ZZE;
-  end if;
-
-  NNfact := Factorization(ZZF!!NN);
-  phiPPs := [* *];
-  mPPs := [* *];
-  for PPfact in NNfact do
-    PP := PPfact[1];
-    e := PPfact[2];
-    assert Norm(bbeta + PP) eq 1;  // must be coprime
-    assert Valuation(ZZF!!ddFE,PP) eq 0;
-    BPP, phiPP, mPP := pMatrixRing(O,PP); //This is where Omax lives.
-    Append(~phiPPs, phiPP);
-    Append(~mPPs, mPP);
-  end for;
-  PPes := [PPfact[1]^PPfact[2] : PPfact in NNfact];
-
-  ZZFmodNN, modNN := quo<ZZF | Generators(NN)>;
-
-  deltamatsmodNN := [];
-  for i := 1 to 3 do
-    delta := iota(Delta.i);
-    deltaPPmats := [* Eltseq(phiPP(delta)) : phiPP in phiPPs *];
-    deltamatseq := [ CRT([ZZF | deltaPPmats[j][i]@@mPPs[j] : j in [1..#deltaPPmats]],
-                               PPes) : i in [1..4]];
-    Append(~deltamatsmodNN, [modNN(a) : a in deltamatseq]);
-  end for;
-
-  GNN := MatrixGroup<2, ZZFmodNN | deltamatsmodNN cat [[-1,0,0,-1]]>;
-
-  ZGNN := [z : z in GNN | z[1,1] eq z[2,2] and z[2,1] eq 0 and z[1,2] eq 0];
-
-  mperm, GNNperm := PermutationRepresentation(GNN);
-  if #Generators(GNN) eq 3 then
-    m1 := Id(GNNperm);
-    nm1 := 1;
-  else
-    m1 := mperm(GNN.4);
-    nm1 := 2;
-  end if;
-  GNNpermp, mpermp := quo<GNNperm | m1>;
-
-  ZZEmodNN := quo<ZZE | NN>;
-  if GammaType eq 0 then
-    index := #ProjectiveLine(ZZEmodNN);
-  else
-    UmodNN := UnitGroup(ZZEmodNN);
-    index := #ProjectiveLine(ZZEmodNN)*#UmodNN;
-    if NN + 2*ZZE ne NN then
-      index div:= 2;
-    end if;
-    // index *:= #UmodNN div #sub<UmodNN | [2*x : x in UmodNN]>;
-  end if;
-  Hs := Subgroups(GNNpermp : IndexEqual := index);
-  Ts := [CosetTable(GNNpermp, H`subgroup) : H in Hs];
-  mpermp0s := [CosetTableToRepresentation(GNNpermp,T) : T in Ts];
-  if GammaType eq 0 then
-    mpermp0s := [mpermp0 : mpermp0 in mpermp0s | #Kernel(mpermp0) eq (#ZGNN div nm1)];
-  else
-    mpermp0s := [mpermp0 : mpermp0 in mpermp0s | #Kernel(mpermp0) eq 1];
-  end if;
-
-  // need only one!
-  // assert mpermp0s eq 1;  Investigate this bug
-  mpermp0 := mpermp0s[1];
-  kermpermp0 := Kernel(mpermp0);
-  if GammaType eq 0 then
-    assert &and[mpermp(mperm(z)) in kermpermp0 : z in ZGNN];
-  end if;
-
-  sigmas := [mpermp0(GNNpermp.i) : i in [1..3]];
-
-  return sigmas, Genus(sigmas), Image(mpermp0);
-end intrinsic;
-
-intrinsic OrderPXL(M::Any,bound::Any)->Any
-{Returns the order of the matrix when thought in PXL}
-  matrix := M;
-  for ord in [1..bound] do
-    if matrix[1][1] eq matrix[2][2] and matrix[1][2] eq matrix[2][1] and matrix[1][2] eq 0 then
-      return ord;
-    end if;
-    matrix *:= M;
-  end for;
-  return -1;
-end intrinsic;
+// intrinsic InternalTriangleGroupMapExactFull(Delta::GrpPSL2Tri : Simplify := 1) -> SeqEnum
+//   {Returns the full quaternionic representation for Delta.}
+//
+//   require IsTriangleGroup(Delta) : "Must be triangle group";
+//
+//   a,b,c := Explode(DefiningABC(Delta));
+//   m := Lcm([a,b,c]);
+//   K<z2m> := CyclotomicField(2*m);
+//   z2a := z2m^(m div a);
+//   z2b := z2m^(m div b);
+//   z2c := z2m^(m div c);
+//   l2a := z2a+1/z2a;
+//   l2b := z2b+1/z2b;
+//   l2c := z2c+1/z2c;
+//   if Simplify ge 1 then
+//     F := sub<K | [l2a,l2b,l2c]>;
+//     if F cmpeq Rationals() then
+//       ZF := Integers();
+//     else
+//       OF := EquationOrder(F);
+//       ZF := MaximalOrder(OF : Ramification := PrimeDivisors(m));
+//       _, ZF := OptimizedRepresentation(ZF);
+//     end if;
+//     F<w> := NumberField(ZF);
+//   else
+//     F<w> := sub<K | [z2m+1/z2m]>;
+//   end if;
+//   l2a := F!l2a;
+//   l2b := F!l2b;
+//   l2c := F!l2c;
+//
+//   if Simplify ge 1 then
+//     OF := EquationOrder(F);
+//     ZZF := MaximalOrder(OF : Ramification := PrimeDivisors(m));
+//     bl, ZZFop := OptimizedRepresentation(ZZF);
+//     if bl then
+//       Fop := NumberField(ZZFop);
+//     else
+//       Fop := F;
+//     end if;
+//   else
+//     Fop := F;
+//   end if;
+//
+//   Ffree<fa,fb,fc> := FreeAlgebra(Fop, 3);
+//   B<fa,fb,fc> := quo<Ffree |
+//                 fa^2 - l2a*fa + 1,
+//                 fb^2 - l2b*fb + 1,
+//                 fc^2 - l2c*fc + 1,
+//                 fa*fb - l2c + fc,
+//                 fb*fc - l2a + fa,
+//                 fc*fa - l2b + fb,
+//                 fb*fa - l2b*fa - l2a*fb - fc + l2a*l2b,
+//                 fc*fb - l2c*fb - l2b*fc - fa + l2b*l2c,
+//                 fa*fc - l2a*fc - l2c*fa - fb + l2c*l2a>;
+//
+//   Bass, mass := Algebra(B);
+//
+//   bl, Bquat, mquat := IsQuaternionAlgebra(Bass);
+//   assert bl;
+//
+//   faquat := mquat(mass(fa));
+//   fbquat := mquat(mass(fb));
+//   fcquat := mquat(mass(fc));
+//
+//   // when integrated into the package, cache
+//   iota := Delta`TriangleGroupMap^-1*
+// 	                           map<Delta`TriangleGroup -> Bquat |
+//                   x :-> &*([Bquat!1] cat [[faquat,fbquat,fcquat][Abs(s)]^Sign(s) : s in Eltseq(x)])>;
+//
+//   return iota;
+// end intrinsic;
+//
+// intrinsic CongruenceImage(Delta::GrpPSL2Tri, NN::Any) -> Map, Grp
+//   {Computes the image of reduction modulo NN on the triangle group Delta.}
+//
+//   /*
+//   F<l2a,l2b,l2c> := FunctionField(Rationals(),3);
+//   Ffree<fa,fb,fc> := FreeAlgebra(F, 3);
+//   B<fa,fb,fc> := quo<Ffree |
+// 				  fa^2 - l2a*fa + 1,
+// 				  fb^2 - l2b*fb + 1,
+// 				  fc^2 - l2c*fc + 1,
+// 				  fa*fb - l2c + fc,
+// 				  fb*fc - l2a + fa,
+// 				  fc*fa - l2b + fb,
+// 				  fb*fa - l2b*fa - l2a*fb - fc + l2a*l2b,
+// 				  fc*fb - l2c*fb - l2b*fc - fa + l2b*l2c,
+// 				  fa*fc - l2a*fc - l2c*fa - fb + l2c*l2a>;
+//   Bass, mass := Algebra(B);
+//   Eltseq(iota(mass(fa))), Eltseq(iota(mass(fa))), Eltseq(iota(mass(fa)));
+//   */
+//
+//   a,b,c := Explode(DefiningABC(Delta));
+//   m := Lcm([a,b,c]);
+//   K<z2m> := CyclotomicField(2*m);
+//   z2a := z2m^(m div a);
+//   z2b := z2m^(m div b);
+//   z2c := z2m^(m div c);
+//   l2a := z2a+1/z2a;
+//   l2b := z2b+1/z2b;
+//   l2c := z2c+1/z2c;
+//   F := sub<K | [l2a,l2b,l2c]>;
+//   if F cmpeq Rationals() then
+//     F := RationalsAsNumberField();
+// 	ZZF := Integers(F);
+//   else
+// 	OF := EquationOrder(F);
+// 	ZZF := MaximalOrder(OF : Ramification := PrimeDivisors(m));
+// 	_, ZZF := OptimizedRepresentation(ZZF);
+//   end if;
+//   F<w> := NumberField(ZZF);
+//   l2a := ZZF!l2a;
+//   l2b := ZZF!l2b;
+//   l2c := ZZF!l2c;
+//
+//   daelt := [
+// 				0,
+// 				0,
+// 				0,
+// 				1,
+// 				l2b,
+// 				0,
+// 				-1,
+// 				0,
+// 				-l2a*l2b,
+// 				1,
+// 				l2a,
+// 				l2b,
+// 				-1,
+// 				0,
+// 				0,
+// 				l2a
+// 		    ];
+//   dbelt := [
+// 				0,
+// 				0,
+// 				1,
+// 				0,
+// 				-l2b*l2c,
+// 				l2b,
+// 				l2c,
+// 				1,
+// 				-1,
+// 				0,
+// 				l2b,
+// 				0,
+// 				l2c,
+// 				-1,
+// 				0,
+// 				0
+// 			];
+//   dcelt := [
+// 			  0,
+// 			  1,
+// 			  0,
+// 			  0,
+// 			  -1,
+// 			  l2c,
+// 			  0,
+// 			  0,
+// 			  l2a,
+// 			  0,
+// 			  0,
+// 			  -1,
+// 			  -l2a*l2c,
+// 			  l2a,
+// 			  1,
+// 			  l2c
+// 		  ];
+//
+//   ZZE := Order(NN);
+//   E := NumberField(ZZE);
+//   _ := IsSubfield(E,F);
+//
+//   ZZFmodNN, modNN := quo<ZZF | Generators(NN)>;
+//   gensDeltamodNN := [[ZZFmodNN | -1,0,0,0,0,-1,0,0,0,0,-1,0,0,0,0,-1]] cat
+//                       [[modNN(a) : a in dselt] : dselt in [daelt,dbelt,dcelt]];
+//   pmGNN := MatrixGroup<4, ZZFmodNN | gensDeltamodNN>;
+//   return pmGNN;
+// end intrinsic;
 
 intrinsic SameSquareClass(x::Any,y::Any) -> BoolElt
 {Returns true if x and y differ by a square}
@@ -630,17 +371,17 @@ intrinsic FindEquivModH1(M::Any,H1QuotientReps::SeqEnum) -> Any
   return [Meq : Meq in H1QuotientReps | EquivModH1(Meq,M)][1];
 end intrinsic;
 
-intrinsic FindMatrixH1(ZZEmodNN::Any,x::Any) ->Any
-{Returns a matrix in the class}
-  for y in CartesianPower(ZZEmodNN,2) do
-    if (x[1]*y[2]-y[1]*x[2]) eq x[3] then
-      return Matrix([[x[1],y[1]],[x[2],y[2]]]);
-    end if;
-  end for;
-end intrinsic;
-
-intrinsic H1QuotientReps(ZZEmodNN::Any) -> Any, Any
+intrinsic H1QuotientReps(ZZEmodNN::Any,pm) -> Any, Any
 {Returns matrix representatives for GN/H1 and a map to those representatives}
+  FindMatrixH1 := function(ZZEmodNN,x)
+  // Returns a matrix in the class modulo H1
+    for y in CartesianPower(ZZEmodNN,2) do
+      if (x[1]*y[2]-y[1]*x[2]) eq x[3] then
+        return Matrix([[x[1],y[1]],[x[2],y[2]]]);
+      end if;
+    end for;
+  end function;
+
   reps := [];
   repsSq := [];
   for x in ZZEmodNN do
@@ -658,7 +399,23 @@ intrinsic H1QuotientReps(ZZEmodNN::Any) -> Any, Any
       end for;
     end if;
   end for;
-  return reps;
+  if pm eq 1 then
+    return [M:M in reps|IsOne(Determinant(M))];
+  else
+    return reps;
+  end if;
+end intrinsic;
+
+intrinsic OrderPXL(M::Any,bound::Any)->Any
+{Returns the order of the matrix when thought in PXL}
+  matrix := M;
+  for ord in [1..bound] do
+    if matrix[1][1] eq matrix[2][2] and matrix[1][2] eq matrix[2][1] and matrix[1][2] eq 0 then
+      return ord;
+    end if;
+    matrix *:= M;
+  end for;
+  return -1;
 end intrinsic;
 
 intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0) -> BoolElt, SeqEnum
@@ -674,6 +431,20 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
   Oseq := [1] cat [iota(Delta.i) : i in [1..3]];
   ZZE := Order(NN);
   E := NumberField(ZZE);
+
+  B := Codomain(iota);
+  F := BaseField(B);
+  ZZF := Integers(F);
+  _ := IsSubfield(E,F);
+  if Degree(E) lt Degree(F) then
+    if Type(E) eq FldRat then
+      ddFE := Discriminant(Integers(RelativeField(E,F)))*ZZE;
+    else
+      ddFE := ZZE!!Discriminant(Integers(RelativeField(E,F)));
+    end if;
+  else
+    ddFE := 1*ZZE;
+  end if;
 
   basefieldeqQQ := Type(BaseField(A)) eq FldRat;
   if basefieldeqQQ then
@@ -691,12 +462,12 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
     pp := ppfact[1];
     e := ppfact[2];
     if basefieldeqQQ then
-      if Valuation(ZZE!Discriminant(OLambda),pp) ne 0 then
+      if Valuation(ZZE!Discriminant(OLambda),pp) ne 0 or Valuation(ZZE!!ddFE,pp) ne 0 then
         return false,_,_,_;
       end if;
       App, phipp, mpp := pMatrixRing(OLambda,Norm(pp));
     else
-      if Valuation(Discriminant(OLambda),pp) ne 0 then
+      if Valuation(Discriminant(OLambda),pp) ne 0 or Valuation(ZZE!!ddFE,pp) ne 0 then
         return false,_,_,_;
       end if;
       App, phipp, mpp := pMatrixRing(OLambda,pp);
@@ -726,9 +497,8 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
     Append(~deltamatsmodNN, [modNN(a) : a in deltamatseq]);
   end for;
 
-  print "Triangle group, ",DefiningABC(Delta),". Norm of the ideal ", Factorization(Norm(NN)),". Orders: ",[OrderPXL(Matrix(2,2,d),1000) : d in deltamatsmodNN];
-  if [OrderPXL(Matrix(2,2,d),1000) : d in deltamatsmodNN] ne DefiningABC(Delta) then
-    print "HERE!!!!!!!", "Triangle group, ",DefiningABC(Delta),". Norm of the ideal ", Factorization(Norm(NN)),". Orders: ",[OrderPXL(Matrix(2,2,d),1000) : d in deltamatsmodNN];
+  if not &and[OrderPXL(Matrix(2,2,deltamatsmodNN[i]),DefiningABC(Delta)[i]+1) eq DefiningABC(Delta)[i] : i in [1..3]] then
+    return false,_,_,_;
   end if;
 
   cosetaction := function(alpha,reps,red);
@@ -745,9 +515,9 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
     ZZQ := Parent(sq);
     L := [s : s in ZZQ | s^2 eq sq];
     if #L eq 0 then
-      return false,_;
+      return false, _;
     else
-      return true,L[1];
+      return true, L[1];
     end if;
   end function;
 
@@ -756,7 +526,6 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
     bool,sq := IsSquareQuot(Determinant(delt));
     if bool then
       delt := Matrix(2,2,[alpha[i]*sq^(-1):i in [1..#alpha]]);
-      print [delt^s : s in DefiningABC(Delta)];
     end if;
     seq := [];
     for i := 1 to #reps do
@@ -764,7 +533,6 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
       M := FindEquivModH1(alpp,reps);
       Append(~seq, Index(reps, M));
     end for;
-    print seq;
     return Sym(#reps)!seq;
   end function;
 
@@ -773,14 +541,64 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
     sigmas := [cosetaction(d,reps, red) : d in deltamatsmodNN];
   else
     //GammaType is 1
-    reps := H1QuotientReps(ZZEmodNN);
+    if &and[IsSquareQuot(Determinant(Matrix(2,2,alpha))):alpha in deltamatsmodNN] then
+      pm := 1;
+    else
+      pm := 1;
+    end if;
+    reps := H1QuotientReps(ZZEmodNN,pm);
     sigmas := [cosetactionH1(d,reps) : d in deltamatsmodNN];
   end if;
   return true, sigmas, Genus(sigmas), sub<Universe(sigmas) | sigmas>;
 end intrinsic;
 
+//************************************************//
+//                  Enumeration                   //
+//************************************************//
+intrinsic ListBoundedGenusAdmissible(genus::RngIntElt) -> SeqEnum
+{Returns the list (organized by genus in ascending order) of lists (a,b,c;p) such that the curve X_0(a,b,c;pp) have genus bounded by g and pp is a prime of norm p}
+  list := [[]:i in [0..genus]];
+  boundq := QMax(genus);
+  powers := [ n : n in [2..boundq] | IsPrimePower(n) ];
+  for q in powers do
+    possibilities := Set(PrimeDivisors(q) cat Divisors(q+1) cat Divisors(q-1));
+    Exclude(~possibilities,1);
+    p := PrimeDivisors(q)[1];
+    possibilities := Sort(SetToSequence(possibilities));
+    // print "Possibilities for q=",q," are ",possibilities;
+    for i in [1..#possibilities] do
+      a := possibilities[i];
+      for j in [i..#possibilities] do
+        b := possibilities[j];
+        cbound := CBound(a,b,q,genus);
+        for k in [j..#possibilities] do
+          c := possibilities[k];
+          if c le cbound and IsHyperbolicTriple(a,b,c) and IsQAdmissible(a,b,c,p,q) then
+            qFromGroup, pm := Explode(GroupForABC(a,b,c,p));
+            if q eq qFromGroup then
+              // print a,b,c;
+              g := GenusTriangularModularCurve(a,b,c,p:q:=q,pm:=pm);
+              // print "genus", g;
+              if g le genus then
+                Append(~list[Integers()!(g+1)],[a,b,c,p,q,pm]);
+              end if;
+            end if;
+          end if;
+        end for;
+      end for;
+    end for;
+  end for;
+  return [LexOrderABC(list[i]):i in [1..genus+1]];
+end intrinsic;
+
+intrinsic CountBoundedGenus(g::RngIntElt) -> SeqEnum
+{Counts how many curves of genus up to g there are.}
+  L := ListBoundedGenusAdmissible(g);
+  return [#L[1]+5] cat [#L[i]: i in [2..#L]];
+end intrinsic;
+
 intrinsic DeleteDuplicates(L::List) -> List
-{Deletes repeated entries}
+{Deletes repeated entries of the list L}
   new := [];
   for x in L do
     if not &or[new[j] eq x : j in [1..#new]] then
@@ -833,20 +651,38 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
             Append(~idealsChecked,NNP);
             print "....   ", Norm(NNP);
             // INSERT p's!!!!!!!!!
-            sigmas, g := ProjectiveRamificationType(Delta, NNP);
+            bool, sigmas, g := ProjectiveRamificationType(Delta, NNP);
             p := Factorization(Norm(pp))[1][1];
             if not IsPrime(NNP) then
+              checked := [[a,b,c],[a,c,b],[b,a,c],[b,c,a],[c,a,b],[c,b,a]];
               for mult in CartesianPower([1,p],3) do
-                Deltap := TriangleGroup(a*mult[1],b*mult[2],c*mult[3]);
-                Ep := BaseField(QuaternionAlgebra(Deltap));
-                _ := IsSubfield(E,Ep);
-                ZZEp := Integers(Ep);
-                NNPp := [N :N in IdealsUpTo(Norm(NNP),ZZEp)|Norm(N) eq Norm(NNP)][1];
-                _, _ := ProjectiveRamificationType(Deltap, NNPp);
+                triplep := [];
+                for i -> s in [a,b,c] do
+                  if mult[i] ne 1 and IsPrimePower(s) and Valuation(s,p) ge 1 then
+                    Append(~triplep,mult[i]*s);
+                  else
+                    Append(~triplep,s);
+                  end if;
+                end for;
+                ap,bp,cp := Explode(triplep);
+                if not triplep in checked then
+                  Per := Permutations(Set([[ap,1],[bp,2],[cp,3]]));
+                  checked cat:= SetToSequence(Set([[pr[1][1],pr[2][1],pr[3][1]] : pr in Per]));
+                  Deltap := TriangleGroup(ap,bp,cp);
+                  Ep := BaseField(QuaternionAlgebra(Deltap));
+                  _ := IsSubfield(E,Ep);
+                  ZZEp := Integers(Ep);
+                  for NNPp in [N : N in IdealsUpTo(Norm(NNP),ZZEp)|Norm(N) eq Norm(NNP)] do
+                    boolp, _,gp := ProjectiveRamificationType(Deltap, NNPp);
+                    if boolp and gp le genus then
+                      list[gp+1] := Append(list[gp+1],[*[ap,bp,cp],NNP*]);
+                    end if;
+                  end for;
+                end if;
               end for;
             end if;
             // sigmas,g:= RamificationType(Delta, NNP:GammaType :=0);
-            if g le genus then
+            if g le genus and bool then
               list[g+1] := Append(list[g+1],[*[a,b,c],NNP*]);
               print "genus ",g," ", Norm(NNP);
               Append(~NNOKs_frontier, NNP);
