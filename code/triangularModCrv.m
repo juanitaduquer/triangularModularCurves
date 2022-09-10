@@ -679,7 +679,7 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
           if toCheck then
             Append(~idealsChecked,NNP);
             print "....   ", Norm(NNP);
-            // INSERT p's!!!!!!!!!
+            print "About to check", a,b,c;
             bool, sigmas, g := ProjectiveRamificationType(Delta, NNP);
             p := Factorization(Norm(pp))[1][1];
             if not IsPrime(NNP) then
@@ -702,6 +702,7 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
                   _ := IsSubfield(E,Ep);
                   ZZEp := Integers(Ep);
                   NNPp := ZZEp!!NNP;
+                  print "About to check", ap,bp,cp;
                   boolp, _,gp := ProjectiveRamificationType(Deltap, NNPp);
                   if boolp and gp le genus then
                     list[gp+1] := Append(list[gp+1],[*[ap,bp,cp],NNP*]);
