@@ -22,6 +22,7 @@ S,RamificationType,"Returns the cycle type of the ramification above 0,1,oo; Gam
 S,OrderPXL,Returns the order of the matrix when thought in PXL,0,2,0,0,0,0,0,0,0,-1,,0,0,-1,,-1,-38,-38,-38,-38,-38
 S,SameSquareClass,Returns true if x and y differ by a square,0,2,0,0,0,0,0,0,0,-1,,0,0,-1,,36,-38,-38,-38,-38,-38
 S,EquivModH1,Returns true if M1 and M2 are equivalent modulo H1,0,2,0,0,0,0,0,0,0,-1,,0,0,-1,,36,-38,-38,-38,-38,-38
+S,FindEquivModH1,Returns the equivalent to M from the list of representatives,0,2,0,0,0,0,0,0,0,82,,0,0,-1,,-1,-38,-38,-38,-38,-38
 S,FindMatrixH1,Returns a matrix in the class,0,2,0,0,0,0,0,0,0,-1,,0,0,-1,,-1,-38,-38,-38,-38,-38
 S,H1QuotientReps,Returns matrix representatives for GN/H1 and a map to those representatives,0,1,0,0,0,0,0,0,0,-1,,-1,-1,-38,-38,-38,-38
 S,ProjectiveRamificationType,"Returns the cycle type of the ramification above 0,1,oo; GammaType is either 0 or 1",0,2,0,0,0,0,0,0,0,-1,,0,0,GrpPSL2Tri,,36,82,-38,-38,-38,-38

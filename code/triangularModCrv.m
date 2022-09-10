@@ -617,12 +617,17 @@ end intrinsic;
 
 intrinsic SameSquareClass(x::Any,y::Any) -> BoolElt
 {Returns true if x and y differ by a square}
-  return true;
+  return x in [s^2*y:s in Parent(x)];
 end intrinsic;
 
 intrinsic EquivModH1(M1::Any,M2::Any) ->BoolElt
 {Returns true if M1 and M2 are equivalent modulo H1}
   return (SameSquareClass(Determinant(M1),Determinant(M2))) and ((M1[1][1] eq M2[1][1] and M1[2][1] eq M2[2][1]) or (M1[1][1] eq -M2[1][1] and M1[2][1] eq -M2[2][1]));
+end intrinsic;
+
+intrinsic FindEquivModH1(M::Any,H1QuotientReps::SeqEnum) -> Any
+{Returns the equivalent to M from the list of representatives}
+  return [Meq : Meq in H1QuotientReps | EquivModH1(Meq,M)][1];
 end intrinsic;
 
 intrinsic FindMatrixH1(ZZEmodNN::Any,x::Any) ->Any
@@ -639,7 +644,7 @@ intrinsic H1QuotientReps(ZZEmodNN::Any) -> Any, Any
   reps := [];
   repsSq := [];
   for x in ZZEmodNN do
-    if not &or[SameSquareClass(x,y): y in repsSq] then
+    if IsUnit(x) and not &or[SameSquareClass(x,y): y in repsSq] then
       Append(~repsSq,x);
     end if;
   end for;
@@ -726,8 +731,7 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
     print "HERE!!!!!!!", "Triangle group, ",DefiningABC(Delta),". Norm of the ideal ", Factorization(Norm(NN)),". Orders: ",[OrderPXL(Matrix(2,2,d),1000) : d in deltamatsmodNN];
   end if;
 
-  reps, red := ProjectiveLine(ZZEmodNN);
-  cosetaction := function(alpha);
+  cosetaction := function(alpha,reps,red);
     seq := [];
     for i := 1 to #reps do
       alpp := Matrix(2,2,alpha)*Matrix(2,1,[modNN(c) : c in Eltseq(reps[i])]);
@@ -737,8 +741,47 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
     return Sym(#reps)!seq;
   end function;
 
-  sigmas := [cosetaction(d) : d in deltamatsmodNN];
+  IsSquareQuot := function(sq)
+    ZZQ := Parent(sq);
+    L := [s : s in ZZQ | s^2 eq sq];
+    if #L eq 0 then
+      return false,_;
+    else
+      return true,L[1];
+    end if;
+  end function;
 
+  cosetactionH1 := function(alpha,reps);
+    print "I am computing another sigma";
+    delt := Matrix(2,2,alpha);
+    bool,sq := IsSquareQuot(Determinant(delt));
+    print "det1", Determinant(delt);
+    if bool then
+      delt := Matrix(2,2,[alpha[i]*sq^(-1):i in [1..#alpha]]);
+      print "Now", Determinant(delt);
+      print [delt^s : s in DefiningABC(Delta)];
+    end if;
+    seq := [];
+    for i := 1 to #reps do
+      alpp := delt*reps[i];
+      M := FindEquivModH1(alpp,reps);
+      Append(~seq, Index(reps, M));
+      if Index(reps, M) eq i then
+        print "one";
+      end if;
+    end for;
+    print seq;
+    return Sym(#reps)!seq;
+  end function;
+
+  if GammaType eq 0 then
+    reps, red := ProjectiveLine(ZZEmodNN);
+    sigmas := [cosetaction(d,reps, red) : d in deltamatsmodNN];
+  else
+    //GammaType is 1
+    reps := H1QuotientReps(ZZEmodNN);
+    sigmas := [cosetactionH1(d,reps) : d in deltamatsmodNN];
+  end if;
   return true, sigmas, Genus(sigmas), sub<Universe(sigmas) | sigmas>;
 end intrinsic;
 
