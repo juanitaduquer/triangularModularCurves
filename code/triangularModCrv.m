@@ -171,6 +171,35 @@ intrinsic IsQAdmissible(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::RngIntElt, q::
   return &and[((q+1) mod s)*((q-1) mod s) eq 0 or s eq p : s in [a,b,c]];
 end intrinsic;
 
+intrinsic IspSplit(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::RngIntElt, q::RngIntElt) ->BoolElt
+{True if the prime pp divides beta.}
+  if 2*a*b*c mod p ne 0 then
+    return true;
+  else
+    m := Lcm([a,b,c]);
+    twom := 2*m;
+    twom div:= p^Valuation(twom,p);
+    if twom eq 1 then
+      power := 1;
+    else
+      power := Order(q,twom);
+    end if;
+    bigPower := q^power;
+    k := GF(bigPower);
+    twoap,twobp,twocp := Explode([(2*s) div (p^Valuation(2*s,p)) : s in [a,b,c]]);
+    zeta_twom := PrimitiveElement(k)^((bigPower-1) div twom);
+    for i in [i:i in [1..twom]|Gcd(i,twom) eq 1] do
+      z := zeta_twom^i;
+      z2a,z2b,z2c := Explode([z^(twom div twos) : twos in [twoap,twobp,twocp]]);
+      l2a, l2b, l2c := Explode([z2a + 1/z2a, z2b + 1/z2b, z2c + 1/z2c]);
+      if (l2a^2 + l2b^2 + l2c^2 - l2a*l2b*l2c - 4) ne 0 then
+        return true;
+      end if;
+    end for;
+    return false;
+  end if;
+end intrinsic;
+
 //************************************************//
 //                Composite Level                 //
 //************************************************//
@@ -575,7 +604,7 @@ intrinsic ListBoundedGenusAdmissible(genus::RngIntElt) -> SeqEnum
           c := possibilities[k];
           if c le cbound and IsHyperbolicTriple(a,b,c) and IsQAdmissible(a,b,c,p,q) then
             qFromGroup, pm := Explode(GroupForABC(a,b,c,p));
-            if q eq qFromGroup then
+            if q eq qFromGroup and IspSplit(a,b,c,p,q) then
               // print a,b,c;
               g := GenusTriangularModularCurve(a,b,c,p:q:=q,pm:=pm);
               // print "genus", g;
@@ -672,12 +701,11 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
                   Ep := BaseField(QuaternionAlgebra(Deltap));
                   _ := IsSubfield(E,Ep);
                   ZZEp := Integers(Ep);
-                  for NNPp in [N : N in IdealsUpTo(Norm(NNP),ZZEp)|Norm(N) eq Norm(NNP)] do
-                    boolp, _,gp := ProjectiveRamificationType(Deltap, NNPp);
-                    if boolp and gp le genus then
-                      list[gp+1] := Append(list[gp+1],[*[ap,bp,cp],NNP*]);
-                    end if;
-                  end for;
+                  NNPp := ZZEp!!NNP;
+                  boolp, _,gp := ProjectiveRamificationType(Deltap, NNPp);
+                  if boolp and gp le genus then
+                    list[gp+1] := Append(list[gp+1],[*[ap,bp,cp],NNP*]);
+                  end if;
                 end if;
               end for;
             end if;

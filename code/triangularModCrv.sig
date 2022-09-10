@@ -12,6 +12,7 @@ S,CBound,"The maximum value of c that can give X_0(a,b,c;pp) of genus < g0",0,4,
 S,QMax,"The maximum value of q that can give X_0(a,b,c;pp) of genus < g0 for pp with residue field of size q",0,1,0,0,0,0,0,0,0,148,,148,-38,-38,-38,-38,-38
 S,GenusTriangularModularCurve,"The genus of X_0(a,b,c,pp) from Theorem 3.3 of [DR. & V.]",0,4,0,0,0,0,0,0,0,148,,0,0,148,,0,0,148,,0,0,148,,148,-38,-38,-38,-38,-38
 S,IsQAdmissible,"True if the triple (a,b,c) is q-admissible",0,5,0,0,0,0,0,0,0,148,,0,0,148,,0,0,148,,0,0,148,,0,0,148,,36,-38,-38,-38,-38,-38
+S,IspSplit,True if the prime pp divides beta,0,5,0,0,0,0,0,0,0,148,,0,0,148,,0,0,148,,0,0,148,,0,0,148,,36,-38,-38,-38,-38,-38
 S,SameSquareClass,Returns true if x and y differ by a square,0,2,0,0,0,0,0,0,0,-1,,0,0,-1,,36,-38,-38,-38,-38,-38
 S,EquivModH1,Returns true if M1 and M2 are equivalent modulo H1,0,2,0,0,0,0,0,0,0,-1,,0,0,-1,,36,-38,-38,-38,-38,-38
 S,FindEquivModH1,Returns the equivalent to M from the list of representatives,0,2,0,0,0,0,0,0,0,82,,0,0,-1,,-1,-38,-38,-38,-38,-38
