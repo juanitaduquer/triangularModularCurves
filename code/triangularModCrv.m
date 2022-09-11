@@ -400,7 +400,7 @@ intrinsic FindEquivModH1(M::Any,H1QuotientReps::SeqEnum) -> Any
   return [Meq : Meq in H1QuotientReps | EquivModH1(Meq,M)][1];
 end intrinsic;
 
-intrinsic H1QuotientReps(ZZEmodNN::Any,pm) -> Any, Any
+intrinsic H1QuotientReps(ZZEmodNN::Any,pm::Any) -> Any, Any
 {Returns matrix representatives for GN/H1 and a map to those representatives}
   FindMatrixH1 := function(ZZEmodNN,x)
   // Returns a matrix in the class modulo H1
@@ -413,13 +413,17 @@ intrinsic H1QuotientReps(ZZEmodNN::Any,pm) -> Any, Any
 
   reps := [];
   repsSq := [];
-  for x in ZZEmodNN do
-    if IsUnit(x) and not &or[SameSquareClass(x,y): y in repsSq] then
-      Append(~repsSq,x);
-    end if;
-  end for;
+  if pm eq 1 then
+    repsSq := [ZZEmodNN!1];
+  else
+    for x in ZZEmodNN do
+      if IsUnit(x) and not &or[SameSquareClass(x,y): y in repsSq] then
+        Append(~repsSq,x);
+      end if;
+    end for;
+  end if;
   for x in CartesianPower(ZZEmodNN,2) do
-    if [x[1],x[2]] ne [ZZEmodNN!0,ZZEmodNN!0] then
+    if &or[IsUnit(x[i]):i in [1..2]] then
       for sq in repsSq do
         M := FindMatrixH1(ZZEmodNN,<x[1],x[2],sq>);
         if #[Mat: Mat in reps | EquivModH1(Mat,M)] eq 0 then
@@ -527,6 +531,7 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
   end for;
 
   if not &and[OrderPXL(Matrix(2,2,deltamatsmodNN[i]),DefiningABC(Delta)[i]+1) eq DefiningABC(Delta)[i] : i in [1..3]] then
+    print "not right orders";
     return false,_,_,_;
   end if;
 
@@ -575,7 +580,9 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
     else
       pm := 1;
     end if;
+    print "finding reps", #ZZEmodNN;
     reps := H1QuotientReps(ZZEmodNN,pm);
+    print "Found reps", #reps;
     sigmas := [cosetactionH1(d,reps) : d in deltamatsmodNN];
   end if;
   return true, sigmas, Genus(sigmas), sub<Universe(sigmas) | sigmas>;
@@ -617,6 +624,7 @@ intrinsic ListBoundedGenusAdmissible(genus::RngIntElt) -> SeqEnum
       end for;
     end for;
   end for;
+  list := [LexOrderABC(DeleteDuplicates(list[i])):i in [1..#list]];
   newList := [[]:i in [0..genus]];
   for i in [1..#list] do
     L := list[i];
@@ -627,11 +635,14 @@ intrinsic ListBoundedGenusAdmissible(genus::RngIntElt) -> SeqEnum
       bool,_,g,_ := ProjectiveRamificationType(Delta,pp);
       if bool then
         assert g eq (i-1);
+        print "Checked", t;
         Append(~newList[i],t);
+      else
+        print "I deleted me", t;
       end if;
     end for;
   end for;
-  return [LexOrderABC(newList[i]): i in [1..genus+1]];
+  return newList;
 end intrinsic;
 
 intrinsic CountBoundedGenus(g::RngIntElt) -> SeqEnum
@@ -640,7 +651,7 @@ intrinsic CountBoundedGenus(g::RngIntElt) -> SeqEnum
   return [#L[1]+5] cat [#L[i]: i in [2..#L]];
 end intrinsic;
 
-intrinsic DeleteDuplicates(L::List) -> List
+intrinsic DeleteDuplicates(L::Any) -> List
 {Deletes repeated entries of the list L}
   new := [];
   for x in L do
