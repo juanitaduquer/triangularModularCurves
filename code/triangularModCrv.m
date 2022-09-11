@@ -691,7 +691,6 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
           if toCheck then
             Append(~idealsChecked,NNP);
             print "....   ", Norm(NNP);
-            print "About to check", a,b,c;
             bool, sigmas, g := ProjectiveRamificationType(Delta, NNP);
             p := Factorization(Norm(pp))[1][1];
             if not IsPrime(NNP) then
