@@ -385,6 +385,178 @@ end intrinsic;
 //   return pmGNN;
 // end intrinsic;
 
+// intrinsic RamificationTypeF(Delta::GrpPSL2Tri, NN::RngOrdIdl : Al := "MinDegree") -> SeqEnum
+//   {Returns the cycle type of the ramification above 0,1,oo.}
+//
+//   if Norm(NN) eq 1 then
+//     GNN := Sym(1);
+//     return [Id(GNN) : i in [1..3]], 0, GNN;
+//   end if;
+//
+//   iota := InternalTriangleGroupMapExactFull(Delta);
+//   B := Codomain(iota);
+//   F := BaseField(B);
+//   ZZF := Integers(F);
+//   O := Order([iota(Delta.i) : i in [1..3]]);
+//   // Omax := MaximalOrder(O);
+//   bbeta := Discriminant(O);
+//
+//   ZZE := Order(NN);
+//   E := NumberField(ZZE);
+//   if Degree(E) lt Degree(F) then
+//     _ := IsSubfield(E,F);
+//     ddFE := ZZE!!Discriminant(Integers(RelativeField(E,F)));
+//   else
+//     ddFE := 1*ZZE;
+//   end if;
+//
+//   NNfact := Factorization(ZZF!!NN);
+//   phiPPs := [* *];
+//   mPPs := [* *];
+//   for PPfact in NNfact do
+//     PP := PPfact[1];
+//     e := PPfact[2];
+//     assert Norm(bbeta + PP) eq 1;  // must be coprime
+//     // assert Valuation(ZZF!!ddFE,PP) eq 0;
+//     BPP, phiPP, mPP := pMatrixRing(O,PP); //This is where Omax lives.
+//     Append(~phiPPs, phiPP);
+//     Append(~mPPs, mPP);
+//   end for;
+//   PPes := [PPfact[1]^PPfact[2] : PPfact in NNfact];
+//
+//   ZZFmodNN, modNN := quo<ZZF | Generators(NN)>;
+//
+//   deltamatsmodNN := [];
+//   for i := 1 to 3 do
+//     delta := iota(Delta.i);
+//     deltaPPmats := [* Eltseq(phiPP(delta)) : phiPP in phiPPs *];
+//     deltamatseq := [ CRT([ZZF | deltaPPmats[j][i]@@mPPs[j] : j in [1..#deltaPPmats]],
+//                                PPes) : i in [1..4]];
+//     Append(~deltamatsmodNN, [modNN(a) : a in deltamatseq]);
+//   end for;
+//
+//   GNN := MatrixGroup<2, ZZFmodNN | deltamatsmodNN cat [[-1,0,0,-1]]>;
+//
+//   if Al eq "MinDegree" then
+//     mperm, GNNperm := PermutationRepresentation(GNN);
+//     if #Generators(GNN) eq 3 then
+//       m1 := Id(GNN);
+//     else
+//       m1 := mperm(GNN.4);
+//     end if;
+//     GNNpermp, mpermp := quo<GNNperm | m1>;
+//     mpermp0, GNNpermp0 := MinimalDegreePermutationRepresentation(GNNpermp);
+//     sigmas := [GNNpermp0.i : i in [1..3]];
+//   elif Al eq "Compute0" then
+//     H0 := sub<GNN | [x : x in GNN | x[2,1] eq 0]>;
+//   end if;
+//
+//   return sigmas, Genus(sigmas), GNNpermp0;
+// end intrinsic;
+//
+//
+// intrinsic RamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0) -> SeqEnum
+//   {Returns the cycle type of the ramification above 0,1,oo; GammaType is either 0 or 1}
+//
+//   if Norm(NN) eq 1 then
+//     GNN := Sym(1);
+//     return [Id(GNN) : i in [1..3]], 0, GNN;
+//   end if;
+//
+//   iota := InternalTriangleGroupMapExactFull(Delta);
+//   B := Codomain(iota);
+//   F := BaseField(B);
+//   ZZF := Integers(F);
+//   O := Order([iota(Delta.i) : i in [1..3]]);
+//   // Omax := MaximalOrder(O);
+//   bbeta := Discriminant(O);
+//
+//   ZZE := Order(NN);
+//   E := NumberField(ZZE);
+//   _ := IsSubfield(E,F);
+//   if Degree(E) lt Degree(F) then
+//     if Type(E) eq FldRat then
+//       ddFE := Discriminant(Integers(RelativeField(E,F)))*ZZE;
+//     else
+//       ddFE := ZZE!!Discriminant(Integers(RelativeField(E,F)));
+//     end if;
+//   else
+//     ddFE := 1*ZZE;
+//   end if;
+//
+//   NNfact := Factorization(ZZF!!NN);
+//   phiPPs := [* *];
+//   mPPs := [* *];
+//   for PPfact in NNfact do
+//     PP := PPfact[1];
+//     e := PPfact[2];
+//     assert Norm(bbeta + PP) eq 1;  // must be coprime
+//     assert Valuation(ZZF!!ddFE,PP) eq 0;
+//     BPP, phiPP, mPP := pMatrixRing(O,PP); //This is where Omax lives.
+//     Append(~phiPPs, phiPP);
+//     Append(~mPPs, mPP);
+//   end for;
+//   PPes := [PPfact[1]^PPfact[2] : PPfact in NNfact];
+//
+//   ZZFmodNN, modNN := quo<ZZF | Generators(NN)>;
+//
+//   deltamatsmodNN := [];
+//   for i := 1 to 3 do
+//     delta := iota(Delta.i);
+//     deltaPPmats := [* Eltseq(phiPP(delta)) : phiPP in phiPPs *];
+//     deltamatseq := [ CRT([ZZF | deltaPPmats[j][i]@@mPPs[j] : j in [1..#deltaPPmats]],
+//                                PPes) : i in [1..4]];
+//     Append(~deltamatsmodNN, [modNN(a) : a in deltamatseq]);
+//   end for;
+//
+//   GNN := MatrixGroup<2, ZZFmodNN | deltamatsmodNN cat [[-1,0,0,-1]]>;
+//
+//   ZGNN := [z : z in GNN | z[1,1] eq z[2,2] and z[2,1] eq 0 and z[1,2] eq 0];
+//
+//   mperm, GNNperm := PermutationRepresentation(GNN);
+//   if #Generators(GNN) eq 3 then
+//     m1 := Id(GNNperm);
+//     nm1 := 1;
+//   else
+//     m1 := mperm(GNN.4);
+//     nm1 := 2;
+//   end if;
+//   GNNpermp, mpermp := quo<GNNperm | m1>;
+//
+//   ZZEmodNN := quo<ZZE | NN>;
+//   if GammaType eq 0 then
+//     index := #ProjectiveLine(ZZEmodNN);
+//   else
+//     UmodNN := UnitGroup(ZZEmodNN);
+//     index := #ProjectiveLine(ZZEmodNN)*#UmodNN;
+//     if NN + 2*ZZE ne NN then
+//       index div:= 2;
+//     end if;
+//     // index *:= #UmodNN div #sub<UmodNN | [2*x : x in UmodNN]>;
+//   end if;
+//   Hs := Subgroups(GNNpermp : IndexEqual := index);
+//   Ts := [CosetTable(GNNpermp, H`subgroup) : H in Hs];
+//   mpermp0s := [CosetTableToRepresentation(GNNpermp,T) : T in Ts];
+//   if GammaType eq 0 then
+//     mpermp0s := [mpermp0 : mpermp0 in mpermp0s | #Kernel(mpermp0) eq (#ZGNN div nm1)];
+//   else
+//     mpermp0s := [mpermp0 : mpermp0 in mpermp0s | #Kernel(mpermp0) eq 1];
+//   end if;
+//
+//   // need only one!
+//   // assert mpermp0s eq 1;  Investigate this bug
+//   mpermp0 := mpermp0s[1];
+//   kermpermp0 := Kernel(mpermp0);
+//   if GammaType eq 0 then
+//     assert &and[mpermp(mperm(z)) in kermpermp0 : z in ZGNN];
+//   end if;
+//
+//   sigmas := [mpermp0(GNNpermp.i) : i in [1..3]];
+//
+//   return sigmas, Genus(sigmas), Image(mpermp0);
+// end intrinsic;
+
+
 intrinsic SameSquareClass(x::Any,y::Any) -> BoolElt
 {Returns true if x and y differ by a square}
   return x in [s^2*y:s in Parent(x)];
@@ -578,7 +750,7 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
     if &and[IsSquareQuot(Determinant(Matrix(2,2,alpha))):alpha in deltamatsmodNN] then
       pm := 1;
     else
-      pm := 1;
+      pm := -1;
     end if;
     print "finding reps", #ZZEmodNN;
     reps := H1QuotientReps(ZZEmodNN,pm);
@@ -664,7 +836,7 @@ end intrinsic;
 
 intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
 {Returns a list of curves X_0(a,b,c;NN) of genus bounded by genus and with NN a non-prime ideal}
-  primesList := ListBoundedGenusAdmissible(genus);
+  primesList := ListBoundedGenusAdmissible(genus-1);
   primesList := &cat[primesList[i] : i in [1..#primesList]];
   primesGrouped := {[primesList[j] : j in [1..#primesList] | primesList[i][1..3] eq primesList[j][1..3]] : i in [1..#primesList]};
   primesGrouped := Sort(SetToSequence(primesGrouped));
@@ -744,7 +916,6 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
                 end if;
               end for;
             end if;
-            // sigmas,g:= RamificationType(Delta, NNP:GammaType :=0);
             if bool and g le genus then
               list[g+1] := Append(list[g+1],[*[a,b,c],NNP*]);
               print "genus ",g," ", Norm(NNP);
@@ -757,4 +928,31 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
     end while;
   end for;
   return [*DeleteDuplicates(list[i]) : i in [1..#list]*];
+end intrinsic;
+
+intrinsic EnumerateX1FromList(genus::RngIntElt, list::SeqEnum) -> SeqEnum
+{Enumerates all X1 of genus <= genus from list}
+  lowGen := [*[**] : i in [1..(genus+1)]*];
+  for t in list do
+    Delta := TriangleGroup(t[1],t[2],t[3]);
+    ZZE := Integers(BaseRing(QuaternionAlgebra(Delta)));
+    pp := Factorization(t[4]*ZZE)[1][1];
+    bool,_,g,_:=ProjectiveRamificationType(Delta,pp:GammaType:=1);
+    if bool and g le genus then
+      Append(~lowGen[g+1],t);
+    end if;
+  end for;
+  return lowGen;
+end intrinsic;
+
+intrinsic CountPrimesFromList(list::SeqEnum) -> RngIntElt
+{Counts primes of E(a,b,c) above p for [a,b,c,p] in list}
+  count := 0;
+  for t in list do
+    Delta := TriangleGroup(t[1],t[2],t[3]);
+    ZZE := Integers(BaseRing(QuaternionAlgebra(Delta)));
+    pps := Factorization(t[4]*ZZE);
+    count +:= #pps;
+  end for;
+  return count;
 end intrinsic;

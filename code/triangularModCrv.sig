@@ -23,3 +23,4 @@ S,ListBoundedGenusAdmissible,"Returns the list (organized by genus in ascending 
 S,CountBoundedGenus,Counts how many curves of genus up to g there are,0,1,0,0,0,0,0,0,0,148,,82,-38,-38,-38,-38,-38
 S,DeleteDuplicates,Deletes repeated entries of the list L,0,1,0,0,0,0,0,0,0,-1,,168,-38,-38,-38,-38,-38
 S,EnumerateCompositeLevel,"Returns a list of curves X_0(a,b,c;NN) of genus bounded by genus and with NN a non-prime ideal",0,1,0,0,0,0,0,0,0,148,,-1,-38,-38,-38,-38,-38
+S,EnumerateX1FromList,Enumerates all X1 of genus <= genus from list,0,2,0,0,0,0,0,0,0,82,,0,0,148,,82,-38,-38,-38,-38,-38
