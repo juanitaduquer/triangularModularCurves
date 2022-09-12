@@ -74,18 +74,6 @@ end intrinsic;
 //         Ramification        //
 //*****************************//
 
-intrinsic RamoficationAtS(s::RngIntElt,q::RngIntElt) -> RngIntElt
-{Given s, it computes the ramification degree associated to sigma_s using Lemma 3.1 of [DR. & V.]}
-  assert s ne 2 or (s eq 2 and IsPrimePower(q) and IsEven(q));
-  if q mod s eq 0 then
-    return (q/s)*(s-1);
-  elif (q+1) mod s eq 0 then
-    return ((q+1)/s)*(s-1);
-  elif (q-1) mod s eq 0 then
-    return ((q-1)/s)*(s-1);
-  end if;
-end intrinsic;
-
 intrinsic RamificationFromMatrix(M::AlgMatElt,q::RngIntElt) -> RngIntElt
 {Computes the ramification at s from the matrix representation of pi_PP(delta_s).}
   if IsIrreducible(CharacteristicPolynomial(M)) then
@@ -94,37 +82,6 @@ intrinsic RamificationFromMatrix(M::AlgMatElt,q::RngIntElt) -> RngIntElt
   else
     // The split semisimple case
     return (q-1)/2;
-  end if;
-end intrinsic;
-
-intrinsic RamificationTriple(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::RngIntElt,q::RngIntElt,pm::RngIntElt) -> RngIntElt
-{Returns the ramification of the cover X_0(a,b,c;pp)->P^1}
-  if p eq 2 then
-    return &+[RamoficationAtS(s,q) : s in [a,b,c]];
-  end if;
-  // This is the hardest case. We cannot defice the ramification from only knowing that the genus is in ZZ
-  if [a,b] eq [2,2] then
-    // sigmas := MatricesTriple([a,b,c],q,pm);
-    // return &+[RamificationFromMatrix(sigmas[i],q) : i in[1..3]];
-  end if;
-  if a ne 2 then
-    return &+[RamoficationAtS(s,q) : s in [a,b,c]];
-  else
-    if pm eq 1 then
-      if q mod 4 eq 1 then
-        return (q-1)/2+RamoficationAtS(b,q)+RamoficationAtS(c,q);
-      else
-        return (q+1)/2+RamoficationAtS(b,q)+RamoficationAtS(c,q);
-      end if;
-    else
-    // Now anyting can happen. We use that g is an integer.
-      r := (q+1)/2+RamoficationAtS(b,q)+RamoficationAtS(c,q);
-      if Floor((1/2)*(-2*(q+1)+r+2)) eq ((1/2)*(-2*(q+1)+r+2)) then
-        return r;
-      else;
-        return r-1;
-      end if;
-    end if;
   end if;
 end intrinsic;
 
@@ -157,13 +114,90 @@ end intrinsic;
 //*****************************//
 //            Genus            //
 //*****************************//
-intrinsic GenusTriangularModularCurve(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::RngIntElt : q:= -1, pm:= 0) -> RngIntElt
-{The genus of X_0(a,b,c,pp) from Theorem 3.3 of [DR. & V.]}
-  if q eq -1 then
-    q, pm := Explode(GroupForABC(a,b,c,p));
+intrinsic GenusTriangularModularCurve(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::RngIntElt : q:= -1, pm:= 0, GammaType :=0) -> RngIntElt
+{The genus of X_0(a,b,c,pp) from Theorem 3.3 of [DR. & V.] or the genus of X1(a,b,c;pp)}
+  function RamoficationAtS(s,q)
+    assert s ne 2 or (s eq 2 and IsPrimePower(q) and IsEven(q));
+    if q mod s eq 0 then
+      return (q/s)*(s-1);
+    elif (q+1) mod s eq 0 then
+      return ((q+1)/s)*(s-1);
+    elif (q-1) mod s eq 0 then
+      return ((q-1)/s)*(s-1);
+    end if;
+  end function;
+
+  function RamificationTripleX0(a,b,c,p,q,pm)
+    if p eq 2 then
+      return &+[RamoficationAtS(s,q) : s in [a,b,c]];
+    end if;
+    // This is the hardest case. We cannot defice the ramification from only knowing that the genus is in ZZ
+    if [a,b] eq [2,2] then
+      // sigmas := MatricesTriple([a,b,c],q,pm);
+      // return &+[RamificationFromMatrix(sigmas[i],q) : i in[1..3]];
+    end if;
+    if a ne 2 then
+      return &+[RamoficationAtS(s,q) : s in [a,b,c]];
+    else
+      if pm eq 1 then
+        if q mod 4 eq 1 then
+          return (q-1)/2+RamoficationAtS(b,q)+RamoficationAtS(c,q);
+        else
+          return (q+1)/2+RamoficationAtS(b,q)+RamoficationAtS(c,q);
+        end if;
+      else
+      // Now anyting can happen. We use that g is an integer.
+        r := (q+1)/2+RamoficationAtS(b,q)+RamoficationAtS(c,q);
+        if Floor((1/2)*(-2*(q+1)+r+2)) eq ((1/2)*(-2*(q+1)+r+2)) then
+          return r;
+        else;
+          return r-1;
+        end if;
+      end if;
+    end if;
+  end function;
+
+  function RamificationTripleX1(a,b,c,p,q,pm)
+    if pm eq 1 and p ne 2 then
+      ram := 0;
+      for s in [a,b,c] do
+        if s eq p then
+          ram +:= ((q^2-q)/(2*p))*(p-1);
+        else
+          ram +:= ((q^2-1)/(2*s))*(s-1);
+        end if;
+      end for;
+      return ram;
+    else
+      ram := 0;
+      for s in [a,b,c] do
+        if s eq p then
+          ram +:= ((q^2-q)/p)*(p-1);
+        else
+          ram +:= ((q^2-1)/s)*(s-1);
+        end if;
+      end for;
+      return ram;
+    end if;
+  end function;
+
+  if GammaType eq 0 then
+    if q eq -1 then
+      q, pm := Explode(GroupForABC(a,b,c,p));
+    end if;
+    r := RamificationTripleX0(a,b,c,p,q,pm);
+    return (1/2)*(-2*(q+1)+r+2);
+  elif GammaType eq 1 then
+    if q eq -1 then
+      q, pm := Explode(GroupForABC(a,b,c,p));
+    end if;
+    if pm eq 1 and p ne 2 then
+      deg := (1/2)*(q^2-1);
+    else
+      deg := q^2-1;
+    end if;
+    return -deg+(1/2)*RamificationTripleX1(a,b,c,p,q,pm)+1;
   end if;
-  r := RamificationTriple(a,b,c,p,q,pm);
-  return (1/2)*(-2*(q+1)+r+2);
 end intrinsic;
 
 intrinsic IsQAdmissible(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::RngIntElt, q::RngIntElt) -> BoolElt
@@ -702,6 +736,7 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
     Append(~deltamatsmodNN, [modNN(a) : a in deltamatseq]);
   end for;
 
+  print "The orders are", [OrderPXL(Matrix(2,2,deltamatsmodNN[i]),DefiningABC(Delta)[i]+1) eq DefiningABC(Delta)[i] : i in [1..3]];
   if not &and[OrderPXL(Matrix(2,2,deltamatsmodNN[i]),DefiningABC(Delta)[i]+1) eq DefiningABC(Delta)[i] : i in [1..3]] then
     print "not right orders";
     return false,_,_,_;
@@ -731,6 +766,7 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
     delt := Matrix(2,2,alpha);
     bool,sq := IsSquareQuot(Determinant(delt));
     if bool then
+      // The problem lives here
       delt := Matrix(2,2,[alpha[i]*sq^(-1):i in [1..#alpha]]);
     end if;
     seq := [];
@@ -747,14 +783,12 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
     sigmas := [cosetaction(d,reps, red) : d in deltamatsmodNN];
   else
     //GammaType is 1
-    if &and[IsSquareQuot(Determinant(Matrix(2,2,alpha))):alpha in deltamatsmodNN] then
+    if &and[IsOne(Determinant(Matrix(2,2,alpha))):alpha in deltamatsmodNN] then
       pm := 1;
     else
       pm := -1;
     end if;
-    print "finding reps", #ZZEmodNN;
     reps := H1QuotientReps(ZZEmodNN,pm);
-    print "Found reps", #reps;
     sigmas := [cosetactionH1(d,reps) : d in deltamatsmodNN];
   end if;
   return true, sigmas, Genus(sigmas), sub<Universe(sigmas) | sigmas>;
@@ -836,7 +870,7 @@ end intrinsic;
 
 intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
 {Returns a list of curves X_0(a,b,c;NN) of genus bounded by genus and with NN a non-prime ideal}
-  primesList := ListBoundedGenusAdmissible(genus-1);
+  primesList := ListBoundedGenusAdmissible(genus);
   primesList := &cat[primesList[i] : i in [1..#primesList]];
   primesGrouped := {[primesList[j] : j in [1..#primesList] | primesList[i][1..3] eq primesList[j][1..3]] : i in [1..#primesList]};
   primesGrouped := Sort(SetToSequence(primesGrouped));
@@ -932,14 +966,15 @@ end intrinsic;
 
 intrinsic EnumerateX1FromList(genus::RngIntElt, list::SeqEnum) -> SeqEnum
 {Enumerates all X1 of genus <= genus from list}
-  lowGen := [*[**] : i in [1..(genus+1)]*];
+  lowGen := [[] : i in [1..(genus+1)]];
   for t in list do
-    Delta := TriangleGroup(t[1],t[2],t[3]);
-    ZZE := Integers(BaseRing(QuaternionAlgebra(Delta)));
-    pp := Factorization(t[4]*ZZE)[1][1];
-    bool,_,g,_:=ProjectiveRamificationType(Delta,pp:GammaType:=1);
-    if bool and g le genus then
-      Append(~lowGen[g+1],t);
+    g:= GenusTriangularModularCurve(t[1],t[2],t[3],t[4]:q:=t[5],pm:=t[6],GammaType:=1);
+    if g le genus then
+      Append(~lowGen[Integers()!g+1],t);
+      Delta:=TriangleGroup(t[1],t[2],t[3]);
+      pp:=Factorization(t[4]*Integers(BaseRing(QuaternionAlgebra(Delta))))[1][1];
+      // _,_,gp := ProjectiveRamificationType(Delta,pp:GammaType:=1);
+      // assert gp eq g;
     end if;
   end for;
   return lowGen;
