@@ -591,14 +591,23 @@ end intrinsic;
 // end intrinsic;
 
 
-intrinsic SameSquareClass(x::Any,y::Any) -> BoolElt
-{Returns true if x and y differ by a square}
-  return x in [s^2*y:s in Parent(x)];
+intrinsic SameSquareClass(x::Any,y::Any) -> BoolElt, Any
+{Returns true if x and y differ by a square. It also returns the element sq such that x=sq^2*y}
+  if x in [s^2*y:s in Parent(x)] then
+    return true, [s : s in Parent(x) | x eq s^2*y][1];
+  else
+    return false,_;
+  end if;
 end intrinsic;
 
 intrinsic EquivModH1(M1::Any,M2::Any) ->BoolElt
 {Returns true if M1 and M2 are equivalent modulo H1}
-  return (SameSquareClass(Determinant(M1),Determinant(M2))) and ((M1[1][1] eq M2[1][1] and M1[2][1] eq M2[2][1]) or (M1[1][1] eq -M2[1][1] and M1[2][1] eq -M2[2][1]));
+  bool, sq := SameSquareClass(Determinant(M1),Determinant(M2));
+  if bool then
+    return ((M1[1][1] eq sq*M2[1][1] and M1[2][1] eq sq*M2[2][1]) or (M1[1][1] eq -sq*M2[1][1] and M1[2][1] eq -sq*M2[2][1]));
+  else
+    return false;
+  end if;    
 end intrinsic;
 
 intrinsic FindEquivModH1(M::Any,H1QuotientReps::SeqEnum) -> Any
