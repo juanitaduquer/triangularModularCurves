@@ -607,7 +607,7 @@ intrinsic EquivModH1(M1::Any,M2::Any) ->BoolElt
     return ((M1[1][1] eq sq*M2[1][1] and M1[2][1] eq sq*M2[2][1]) or (M1[1][1] eq -sq*M2[1][1] and M1[2][1] eq -sq*M2[2][1]));
   else
     return false;
-  end if;    
+  end if;
 end intrinsic;
 
 intrinsic FindEquivModH1(M::Any,H1QuotientReps::SeqEnum) -> Any
@@ -745,9 +745,8 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
     Append(~deltamatsmodNN, [modNN(a) : a in deltamatseq]);
   end for;
 
-  print "The orders are", [OrderPXL(Matrix(2,2,deltamatsmodNN[i]),DefiningABC(Delta)[i]+1) eq DefiningABC(Delta)[i] : i in [1..3]];
   if not &and[OrderPXL(Matrix(2,2,deltamatsmodNN[i]),DefiningABC(Delta)[i]+1) eq DefiningABC(Delta)[i] : i in [1..3]] then
-    print "not right orders";
+    print "The triple is not admissible", DefiningABC(Delta), Norm(NN);
     return false,_,_,_;
   end if;
 
@@ -792,7 +791,7 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
     sigmas := [cosetaction(d,reps, red) : d in deltamatsmodNN];
   else
     //GammaType is 1
-    if &and[IsOne(Determinant(Matrix(2,2,alpha))):alpha in deltamatsmodNN] then
+    if &and[IsSquareQuot(Determinant(Matrix(2,2,alpha))):alpha in deltamatsmodNN] then
       pm := 1;
     else
       pm := -1;
@@ -973,17 +972,19 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
   return [*DeleteDuplicates(list[i]) : i in [1..#list]*];
 end intrinsic;
 
-intrinsic EnumerateX1FromList(genus::RngIntElt, list::SeqEnum) -> SeqEnum
+intrinsic EnumerateX1FromList(genus::RngIntElt, list::SeqEnum:checkType:=false) -> SeqEnum
 {Enumerates all X1 of genus <= genus from list}
   lowGen := [[] : i in [1..(genus+1)]];
   for t in list do
     g:= GenusTriangularModularCurve(t[1],t[2],t[3],t[4]:q:=t[5],pm:=t[6],GammaType:=1);
     if g le genus then
       Append(~lowGen[Integers()!g+1],t);
-      Delta:=TriangleGroup(t[1],t[2],t[3]);
-      pp:=Factorization(t[4]*Integers(BaseRing(QuaternionAlgebra(Delta))))[1][1];
-      // _,_,gp := ProjectiveRamificationType(Delta,pp:GammaType:=1);
-      // assert gp eq g;
+      if checkType then 
+        Delta:=TriangleGroup(t[1],t[2],t[3]);
+        pp:=Factorization(t[4]*Integers(BaseRing(QuaternionAlgebra(Delta))))[1][1];
+        _,_,gp := ProjectiveRamificationType(Delta,pp:GammaType:=1);
+        assert gp eq g;
+      end if;
     end if;
   end for;
   return lowGen;
