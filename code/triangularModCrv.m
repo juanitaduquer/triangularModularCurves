@@ -666,31 +666,31 @@ intrinsic H1QuotientReps(ZZEmodNN::Any,pm::Any,modNN::Any) -> Any, Any
     end if;
   end for;
   print "units",#units;
-  if #repsSq eq 1 then
-    // for x in units do
-    //   for y in ZZEmodNN do
-    //     Append(~reps,[x,y]);
-    //   end for;
-    // end for;
-    // for y in units do
-    //   for x in ZZEmodNN do
-    //     if not [x,y] in reps and not [-x,-y] in reps then
-    //       Append(~reps,[x,y]);
-    //     end if;
-    //   end for;
-    // end for;
-    for x in ZZEmodNN do
-      for y in ZZEmodNN do
-        if IsUnit(x) or IsUnit(y) then
-          if not [x,y] in reps and not [-x,-y] in reps then
-            Append(~reps,[x,y]);
-          end if;
-        end if;
-      end for;
-    end for;
-    print " Found this many", #reps;
-    return [FindMatrixH1(ZZEmodNN,<re[1],re[2],ZZEmodNN!1>) : re in reps];
-  end if;
+  // if #repsSq eq 1 then
+  //   // for x in units do
+  //   //   for y in ZZEmodNN do
+  //   //     Append(~reps,[x,y]);
+  //   //   end for;
+  //   // end for;
+  //   // for y in units do
+  //   //   for x in ZZEmodNN do
+  //   //     if not [x,y] in reps and not [-x,-y] in reps then
+  //   //       Append(~reps,[x,y]);
+  //   //     end if;
+  //   //   end for;
+  //   // end for;
+  //   for x in ZZEmodNN do
+  //     for y in ZZEmodNN do
+  //       if IsUnit(x) or IsUnit(y) then
+  //         if not [x,y] in reps and not [-x,-y] in reps then
+  //           Append(~reps,[x,y]);
+  //         end if;
+  //       end if;
+  //     end for;
+  //   end for;
+  //   print " Found this many", #reps;
+  //   return [FindMatrixH1(ZZEmodNN,<re[1],re[2],ZZEmodNN!1>) : re in reps];
+  // end if;
   print "found units",#units;
   print "Squares",#repsSq;
   P1reps := ProjectiveLine(ZZEmodNN);
