@@ -647,7 +647,10 @@ intrinsic H1QuotientReps(ZZEmodNN::Any,pm::Any,modNN::Any) -> Any, Any
   end function;
 
   reps := [];
+  detsReps := [];
   repsSq := [];
+  vecReps := [];
+  indicesSq := [];
   if pm eq 1 then
     repsSq := [ZZEmodNN!1];
   else
@@ -657,35 +660,36 @@ intrinsic H1QuotientReps(ZZEmodNN::Any,pm::Any,modNN::Any) -> Any, Any
       end if;
     end for;
   end if;
-  units := [];
-  for u in ZZEmodNN do
-    if IsUnit(u) then
-      if not -u in units then
-        Append(~units,u);
-      end if;
-    end if;
-  end for;
-  print "units",#units;
-  if #repsSq eq 1 then
-    // for x in units do
-    //   for y in ZZEmodNN do
-    //     Append(~reps,[x,y]);
-    //   end for;
-    // end for;
-    // for y in units do
-    //   for x in ZZEmodNN do
-    //     if not [x,y] in reps and not [-x,-y] in reps then
-    //       Append(~reps,[x,y]);
-    //     end if;
-    //   end for;
-    // end for;
+  // if #repsSq eq 1 then
+  //   for x in ZZEmodNN do
+  //     for y in ZZEmodNN do
+  //       if not IsZero(x) or not IsZero(y) then
+  //         if (not [x,y] in reps) and (not [-x,-y] in reps) then
+  //           try
+  //             _ := FindMatrixH1(ZZEmodNN,<x,y,ZZEmodNN!1>);
+  //             Append(~reps,[x,y]);
+  //           catch e
+  //             w:=1;
+  //           end try;
+  //         end if;
+  //       end if;
+  //     end for;
+  //   end for;
+  //   print " Found this many", #reps;
+  //   return [FindMatrixH1(ZZEmodNN,<re[1],re[2],ZZEmodNN!1>) : re in reps], [ZZEmodNN!1:i in [1..#reps]],[[1..#reps]],[ZZEmodNN!1],reps;
+  // end if;
+  for sq in repsSq do
+    vecRepsForSq := [];
+    repsForSq := [];
     for x in ZZEmodNN do
       for y in ZZEmodNN do
         if not IsZero(x) or not IsZero(y) then
-          if (not [x,y] in reps) and (not [-x,-y] in reps) then
+          if (not [x,y] in vecRepsForSq) and (not [-x,-y] in vecRepsForSq) then
             try
-              _ := FindMatrixH1(ZZEmodNN,<x,y,ZZEmodNN!1>);
-              Append(~reps,[x,y]);
+              M := FindMatrixH1(ZZEmodNN,<x,y,sq>);
+              Append(~repsForSq, M);
+              Append(~vecRepsForSq,[x,y]);
+              Append(~detsReps, sq);
             catch e
               w:=1;
             end try;
@@ -693,43 +697,57 @@ intrinsic H1QuotientReps(ZZEmodNN::Any,pm::Any,modNN::Any) -> Any, Any
         end if;
       end for;
     end for;
-    print " Found this many", #reps;
-    return [FindMatrixH1(ZZEmodNN,<re[1],re[2],ZZEmodNN!1>) : re in reps];
-  end if;
-  print "found units",#units;
-  print "Squares",#repsSq;
-  P1reps := ProjectiveLine(ZZEmodNN);
-  print "P1",#P1reps;
-  i:=1;
-  for re in P1reps do
-    print "Another re",i;
-    x := [re[1]@modNN,re[2]@modNN];
-    for u in units do
-      for sq in repsSq do
-        M := FindMatrixH1(ZZEmodNN,<u*x[1],u*x[2],sq>);
-        add := true;
-        for Mat in reps do
-          if EquivModH1(Mat,M) then
-            add := false;
-            break;
-          end if;
-        end for;
-        if add then
-          Append(~reps,M);
-        end if;
-      end for;
-    end for;
-    print #reps;
-    i+:=1;
+    reps := reps cat repsForSq;
+    vecReps := vecReps cat vecRepsForSq;
+    if #indicesSq eq 0 then
+      Append(~indicesSq,[1,#vecRepsForSq]);
+    else
+      Append(~indicesSq,[indicesSq[#indicesSq][2]+1,indicesSq[#indicesSq][2]+#vecRepsForSq]);
+    end if;
   end for;
-  print "found reps";
-  print #reps;
-  if pm eq 1 then
-    assert &and[IsOne(Determinant(M))];
-    return reps;
-  else
-    return reps;
-  end if;
+  print "found", #reps;
+  return reps, detsReps, repsSq, indicesSq, vecReps;
+
+//***************************************
+  // units := [];
+  // for u in ZZEmodNN do
+  //   if IsUnit(u) then
+  //     if not -u in units then
+  //       Append(~units,u);
+  //     end if;
+  //   end if;
+  // end for;
+  // P1reps := ProjectiveLine(ZZEmodNN);
+  // i:=1;
+  // for re in P1reps do
+  //   print "Another re",i;
+  //   x := [re[1]@modNN,re[2]@modNN];
+  //   for u in units do
+  //     for sq in repsSq do
+  //       M := FindMatrixH1(ZZEmodNN,<u*x[1],u*x[2],sq>);
+  //       add := true;
+  //       for Mat in reps do
+  //         if EquivModH1(Mat,M) then
+  //           add := false;
+  //           break;
+  //         end if;
+  //       end for;
+  //       if add then
+  //         Append(~reps,M);
+  //       end if;
+  //     end for;
+  //   end for;
+  //   print #reps;
+  //   i+:=1;
+  // end for;
+  // print "found reps";
+  // print #reps;
+  // if pm eq 1 then
+  //   assert &and[IsOne(Determinant(M))];
+  //   return reps;
+  // else
+  //   return reps;
+  // end if;
 end intrinsic;
 
 intrinsic OrderPXL(M::Any,bound::Any)->Any
@@ -848,13 +866,20 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
     end if;
   end function;
 
-  cosetactionH1 := function(alpha,reps:pm:=0);
+  cosetactionH1 := function(alpha,reps,detsReps,repsSq,indicesSq,vecReps:pm:=0);
     delt := Matrix(2,2,alpha);
     bool,sq := IsSquareQuot(Determinant(delt));
     if bool then
-      // The problem lives here
       delt := Matrix(2,2,[alpha[i]*sq^(-1):i in [1..#alpha]]);
     end if;
+    detDelt := Determinant(delt);
+    elt:=ZZEmodNN!1;
+    for c in ZZEmodNN do
+      if c^2*detDelt in repsSq then
+        delt := Matrix(2,2,[c,0,0,c])*delt;
+        break;
+      end if;
+    end for;
     seq := [];
     if pm eq 1 then
       repsVec := [[M[1][1],M[2][1]] : M in reps];
@@ -869,8 +894,21 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
     end if;
     for i := 1 to #reps do
       alpp := delt*reps[i];
-      M := FindEquivModH1(alpp,reps);
-      Append(~seq, Index(reps, M));
+      det := Determinant(alpp);
+      for c in ZZEmodNN do
+        if c^2*det in repsSq then
+          vec := [c*alpp[1][1],c*alpp[2][1]];
+          minVec := [-c*alpp[1][1],-c*alpp[2][1]];
+          indexDet := Index(repsSq,c^2*det);
+          for i in [indicesSq[indexDet][1]..indicesSq[indexDet][2]] do
+            if vec eq vecReps[i] or minVec eq vecReps[i] then
+              Append(~seq,i);
+              break;
+            end if;
+          end for;
+          break;
+        end if;
+      end for;
     end for;
     return Sym(#reps)!seq;
   end function;
@@ -885,9 +923,9 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
     else
       pm := -1;
     end if;
-    print "Beware, this is only optimized for PSL";
-    reps := H1QuotientReps(ZZEmodNN,pm,modNN);
-    sigmas := [cosetactionH1(d,reps:pm:=pm) : d in deltamatsmodNN];
+    // print "Beware, this is only optimized for PSL";
+    reps, detsReps, repsSq, indicesSq, vecReps:= H1QuotientReps(ZZEmodNN,pm,modNN);
+    sigmas := [cosetactionH1(d,reps,detsReps,repsSq,indicesSq,vecReps) : d in deltamatsmodNN];
   end if;
   return true, sigmas, Genus(sigmas), sub<Universe(sigmas) | sigmas>;
 end intrinsic;
