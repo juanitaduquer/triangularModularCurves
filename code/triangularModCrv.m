@@ -600,8 +600,11 @@ intrinsic SameSquareClass(x::Any,y::Any) -> BoolElt, Any
   end if;
 end intrinsic;
 
-intrinsic EquivModH1(M1::Any,M2::Any) ->BoolElt
+intrinsic EquivModH1(M1::Any,M2::Any:pm:=0) ->BoolElt
 {Returns true if M1 and M2 are equivalent modulo H1}
+  if pm eq 1 then
+    return ((M1[1][1] eq M2[1][1] and M1[2][1] eq M2[2][1]) or (M1[1][1] eq M2[1][1] and M1[2][1] eq M2[2][1]));
+  end if;
   bool, sq := SameSquareClass(Determinant(M1),Determinant(M2));
   if bool then
     return ((M1[1][1] eq sq*M2[1][1] and M1[2][1] eq sq*M2[2][1]) or (M1[1][1] eq -sq*M2[1][1] and M1[2][1] eq -sq*M2[2][1]));
@@ -610,15 +613,32 @@ intrinsic EquivModH1(M1::Any,M2::Any) ->BoolElt
   end if;
 end intrinsic;
 
-intrinsic FindEquivModH1(M::Any,H1QuotientReps::SeqEnum) -> Any
+intrinsic FindEquivModH1(M::Any,H1QuotientReps::SeqEnum:pm:=0) -> Any
 {Returns the equivalent to M from the list of representatives}
-  return [Meq : Meq in H1QuotientReps | EquivModH1(Meq,M)][1];
+  for Meq in H1QuotientReps do
+    if EquivModH1(Meq,M) then
+      return Meq;
+    end if;
+  end for;
 end intrinsic;
 
-intrinsic H1QuotientReps(ZZEmodNN::Any,pm::Any) -> Any, Any
+intrinsic H1QuotientReps(ZZEmodNN::Any,pm::Any,modNN::Any) -> Any, Any
 {Returns matrix representatives for GN/H1 and a map to those representatives}
+  print "Finding reps";
   FindMatrixH1 := function(ZZEmodNN,x)
   // Returns a matrix in the class modulo H1
+    if IsUnit(x[1]) then
+      for y in ZZEmodNN do
+        if (x[1]*y) eq x[3] then
+          return Matrix([[x[1],0],[x[2],y]]);
+        end if;
+      end for;
+    end if;
+    for y in ZZEmodNN do
+      if (-x[2]*y eq x[3]) then
+        return Matrix([[x[1],y],[x[2],0]]);
+      end if;
+    end for;
     for y in CartesianPower(ZZEmodNN,2) do
       if (x[1]*y[2]-y[1]*x[2]) eq x[3] then
         return Matrix([[x[1],y[1]],[x[2],y[2]]]);
@@ -637,18 +657,70 @@ intrinsic H1QuotientReps(ZZEmodNN::Any,pm::Any) -> Any, Any
       end if;
     end for;
   end if;
-  for x in CartesianPower(ZZEmodNN,2) do
-    if &or[IsUnit(x[i]):i in [1..2]] then
+  units := [];
+  for u in ZZEmodNN do
+    if IsUnit(u) then
+      if not -u in units then
+        Append(~units,u);
+      end if;
+    end if;
+  end for;
+  print "units",#units;
+  if #repsSq eq 1 then
+    // for x in units do
+    //   for y in ZZEmodNN do
+    //     Append(~reps,[x,y]);
+    //   end for;
+    // end for;
+    // for y in units do
+    //   for x in ZZEmodNN do
+    //     if not [x,y] in reps and not [-x,-y] in reps then
+    //       Append(~reps,[x,y]);
+    //     end if;
+    //   end for;
+    // end for;
+    for x in ZZEmodNN do
+      for y in ZZEmodNN do
+        if IsUnit(x) or IsUnit(y) then
+          if not [x,y] in reps and not [-x,-y] in reps then
+            Append(~reps,[x,y]);
+          end if;
+        end if;
+      end for;
+    end for;
+    print " Found this many", #reps;
+    return [FindMatrixH1(ZZEmodNN,<re[1],re[2],ZZEmodNN!1>) : re in reps];
+  end if;
+  print "found units",#units;
+  print "Squares",#repsSq;
+  P1reps := ProjectiveLine(ZZEmodNN);
+  print "P1",#P1reps;
+  i:=1;
+  for re in P1reps do
+    print "Another re",i;
+    x := [re[1]@modNN,re[2]@modNN];
+    for u in units do
       for sq in repsSq do
-        M := FindMatrixH1(ZZEmodNN,<x[1],x[2],sq>);
-        if #[Mat: Mat in reps | EquivModH1(Mat,M)] eq 0 then
+        M := FindMatrixH1(ZZEmodNN,<u*x[1],u*x[2],sq>);
+        add := true;
+        for Mat in reps do
+          if EquivModH1(Mat,M) then
+            add := false;
+            break;
+          end if;
+        end for;
+        if add then
           Append(~reps,M);
         end if;
       end for;
-    end if;
+    end for;
+    print #reps;
+    i+:=1;
   end for;
+  print "found reps";
+  print #reps;
   if pm eq 1 then
-    return [M:M in reps|IsOne(Determinant(M))];
+    assert &and[IsOne(Determinant(M))];
   else
     return reps;
   end if;
@@ -770,7 +842,7 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
     end if;
   end function;
 
-  cosetactionH1 := function(alpha,reps);
+  cosetactionH1 := function(alpha,reps:pm:=0);
     delt := Matrix(2,2,alpha);
     bool,sq := IsSquareQuot(Determinant(delt));
     if bool then
@@ -778,6 +850,17 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
       delt := Matrix(2,2,[alpha[i]*sq^(-1):i in [1..#alpha]]);
     end if;
     seq := [];
+    if pm eq 1 then
+      repsVec := [[M[1][1],M[2][1]] : M in reps];
+      assert IsOne(Determinant(delt));
+      for i := 1 to #reps do
+        alpp := delt*reps[i];
+        alppVec := [alpp[1][1],alpp[2][1]];
+        minAlppVec := [-alpp[1][1],-alpp[2][1]];
+        Append(~seq, Index(repsVec, alppVec)+Index(repsVec, minAlppVec));
+      end for;
+      return Sym(#reps)!seq;
+    end if;
     for i := 1 to #reps do
       alpp := delt*reps[i];
       M := FindEquivModH1(alpp,reps);
@@ -796,8 +879,9 @@ intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0
     else
       pm := -1;
     end if;
-    reps := H1QuotientReps(ZZEmodNN,pm);
-    sigmas := [cosetactionH1(d,reps) : d in deltamatsmodNN];
+    print "Beware, this is only optimized for PSL";
+    reps := H1QuotientReps(ZZEmodNN,pm,modNN);
+    sigmas := [cosetactionH1(d,reps:pm:=pm) : d in deltamatsmodNN];
   end if;
   return true, sigmas, Genus(sigmas), sub<Universe(sigmas) | sigmas>;
 end intrinsic;
@@ -878,7 +962,7 @@ end intrinsic;
 
 intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
 {Returns a list of curves X_0(a,b,c;NN) of genus bounded by genus and with NN a non-prime ideal}
-  primesList := ListBoundedGenusAdmissible(genus);
+  primesList := ListBoundedGenusAdmissible(genus-1);
   primesList := &cat[primesList[i] : i in [1..#primesList]];
   primesGrouped := {[primesList[j] : j in [1..#primesList] | primesList[i][1..3] eq primesList[j][1..3]] : i in [1..#primesList]};
   primesGrouped := Sort(SetToSequence(primesGrouped));
@@ -922,13 +1006,14 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
               checked := [[a,b,c],[a,c,b],[b,a,c],[b,c,a],[c,a,b],[c,b,a]];
               for mult in CartesianPower([1,p],3) do
                 triplep := [];
-                for i -> s in [a,b,c] do
-                  if mult[i] ne 1 and IsPrimePower(s) and Valuation(s,p) ge 1 then
-                    Append(~triplep,mult[i]*s);
-                  else
-                    Append(~triplep,s);
-                  end if;
-                end for;
+                // for i -> s in [a,b,c] do
+                //   if mult[i] ne 1 and IsPrimePower(s) and Valuation(s,p) ge 1 then
+                //     Append(~triplep,mult[i]*s);
+                //   else
+                //     Append(~triplep,s);
+                //   end if;
+                // end for;
+                triplep := [mult[1]*a,mult[2]*b,mult[3]*c];
                 ap,bp,cp := Explode(triplep);
                 if not triplep in checked then
                   Per := Permutations(Set([[ap,1],[bp,2],[cp,3]]));
@@ -952,6 +1037,7 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
                   for NNPp in NNPps do
                     boolp, _,gp := ProjectiveRamificationType(Deltap, NNPp);
                     if boolp and gp le genus then
+                      print "found something here";
                       list[gp+1] := Append(list[gp+1],[*[ap,bp,cp],NNP*]);
                     end if;
                   end for;
@@ -979,7 +1065,7 @@ intrinsic EnumerateX1FromList(genus::RngIntElt, list::SeqEnum:checkType:=false) 
     g:= GenusTriangularModularCurve(t[1],t[2],t[3],t[4]:q:=t[5],pm:=t[6],GammaType:=1);
     if g le genus then
       Append(~lowGen[Integers()!g+1],t);
-      if checkType then 
+      if checkType then
         Delta:=TriangleGroup(t[1],t[2],t[3]);
         pp:=Factorization(t[4]*Integers(BaseRing(QuaternionAlgebra(Delta))))[1][1];
         _,_,gp := ProjectiveRamificationType(Delta,pp:GammaType:=1);
