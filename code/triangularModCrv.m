@@ -1049,14 +1049,6 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
             if not IsPrime(NNP) then
               checked := [[a,b,c],[a,c,b],[b,a,c],[b,c,a],[c,a,b],[c,b,a]];
               for mult in CartesianPower([1,p],3) do
-                triplep := [];
-                // for i -> s in [a,b,c] do
-                //   if mult[i] ne 1 and IsPrimePower(s) and Valuation(s,p) ge 1 then
-                //     Append(~triplep,mult[i]*s);
-                //   else
-                //     Append(~triplep,s);
-                //   end if;
-                // end for;
                 triplep := [mult[1]*a,mult[2]*b,mult[3]*c];
                 ap,bp,cp := Explode(triplep);
                 if not triplep in checked then
