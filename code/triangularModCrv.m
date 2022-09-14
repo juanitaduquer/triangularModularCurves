@@ -1006,7 +1006,7 @@ end intrinsic;
 
 intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
 {Returns a list of curves X_0(a,b,c;NN) of genus bounded by genus and with NN a non-prime ideal}
-  primesList := ListBoundedGenusAdmissible(genus-1);
+  primesList := ListBoundedGenusAdmissible(genus);
   primesList := &cat[primesList[i] : i in [1..#primesList]];
   primesGrouped := {[primesList[j] : j in [1..#primesList] | primesList[i][1..3] eq primesList[j][1..3]] : i in [1..#primesList]};
   primesGrouped := Sort(SetToSequence(primesGrouped));
@@ -1071,6 +1071,7 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
                     end for;
                   end for;
                   for NNPp in NNPps do
+                    print "tryin",triplep;
                     boolp, _,gp := ProjectiveRamificationType(Deltap, NNPp);
                     if boolp and gp le genus then
                       print "found something here";
