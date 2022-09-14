@@ -31,10 +31,12 @@ end function;
 
 CheckHyperbolic(3,3,3,3);
 
+// aaaaaaaaaaaaaa
+// No proj triples outside of prime level
 CheckHyperbolic(2,3,3,3);
 
 CheckHyperbolic(2,3,4,3);
 
-CheckHyperbolic(2,2,5,2);
+CheckHyperbolic(2,3,5,2);
 
 CheckHyperbolic(2,3,5,5);

@@ -1,4 +1,3 @@
-AttachSpec("~/Documents/Code/Belyi/Code/spec");
 load "listsLowGenus.m";
 
 output := "PassportsOutput.txt";
