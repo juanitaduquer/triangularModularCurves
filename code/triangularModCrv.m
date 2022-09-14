@@ -1071,11 +1071,11 @@ intrinsic EnumerateCompositeLevel(genus::RngIntElt) -> Any
                     end for;
                   end for;
                   for NNPp in NNPps do
-                    print "tryin",triplep;
+                    print "trying",triplep;
                     boolp, _,gp := ProjectiveRamificationType(Deltap, NNPp);
                     if boolp and gp le genus then
-                      print "found something here";
-                      list[gp+1] := Append(list[gp+1],[*[ap,bp,cp],NNP*]);
+                      print "found something here", gp, Norm(NNPp);
+                      list[gp+1] := Append(list[gp+1],[*Sort([ap,bp,cp]),NNP*]);
                     end if;
                   end for;
                 end if;
