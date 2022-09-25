@@ -791,6 +791,7 @@ intrinsic BaseFieldE(a::RngIntElt, b::RngIntElt, c::RngIntElt, p::RngIntElt : pr
     l2s := ChangeUniverse(l2s, EA);
     Append(~l2s, EA.1);
   else
+    EA := Estep;
     Append(~l2s, Roots(f,EA)[1][1]);
   end if;
   E, m := RamifiedRepresentation(EA);
