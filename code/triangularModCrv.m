@@ -762,6 +762,65 @@ intrinsic OrderPXL(M::Any,bound::Any)->Any
   return -1;
 end intrinsic;
 
+lambdaminpol := function(s);
+  K<z> := CyclotomicField(s);
+  return MinimalPolynomial(z+z^(-1));
+end function;
+
+intrinsic BaseFieldE(a::RngIntElt, b::RngIntElt, c::RngIntElt, p::RngIntElt : prec := 40) -> FldPad
+  {Returns the local field E_pp where E = E(a,b,c) and pp is a prime above p.}
+
+  QQp := pAdicField(p, prec);
+  Estep := QQp;
+  l2s := [];
+  for s in [a,b,c] do
+    f := Factorization(lambdaminpol(s),Estep)[1][1];
+    if Degree(f) gt 1 then
+      Estep := LocalField(Estep, f);
+      l2s := ChangeUniverse(l2s, Estep);
+      Append(~l2s, Estep.1);
+    else
+      Append(~l2s, Roots(f,Estep)[1][1]);
+    end if;
+  end for;
+  
+  l2spol := Polynomial([-(l2s[1]+2)*(l2s[2]+2)*(l2s[3]+2),0,1]);
+  f := Factorization(l2spol, Estep)[1][1];
+  if Degree(f) gt 1 then
+    EA := LocalField(Estep, f);
+    l2s := ChangeUniverse(l2s, EA);
+    Append(~l2s, EA.1);
+  else
+    EA := Estep;
+    Append(~l2s, Roots(f,EA)[1][1]);
+  end if;
+  E, m := RamifiedRepresentation(EA);
+  l2s := [m(l2) : l2 in l2s];
+
+  return E, l2s;
+end intrinsic;
+
+intrinsic ProjectiveOrderLocal(a::RngIntElt, b::RngIntElt, c::RngIntElt, 
+                               s::RngIntElt, p::RngIntElt, e::RngIntElt) -> 
+                                                      BoolElt, SeqEnum
+  {Returns the projective order of delta_s modulo pp^e, where pp is a prime
+   above p in E(a,b,c) using a local representation}
+
+  E, l2s := BaseFieldE(a,b,c,p);
+  pi := UniformizingElement(E);
+  l2 := l2s[Index([a,b,c],s)];
+  l2val := Valuation(l2+2);
+  assert l2val mod 2 eq 0;
+  pi := UniformizingElement(E);
+  R := quo<Integers(E) | pi^e>;
+  deltaspol := Polynomial([R | (l2+2)/pi^l2val,-(l2+2)/pi^(l2val div 2),1]);
+  deltasmat := MatrixWithGivenCharacteristicPolynomial(deltaspol);
+
+  for d in Divisors(s) do
+    if IsScalar(deltasmat^d) then return d; end if;
+  end for;
+end intrinsic;
+
 intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0) -> BoolElt, SeqEnum
   {Returns the cycle type of the ramification above 0,1,oo; GammaType is either 0 or 1}
 
