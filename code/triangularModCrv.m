@@ -783,7 +783,7 @@ intrinsic BaseFieldE(a::RngIntElt, b::RngIntElt, c::RngIntElt, p::RngIntElt : pr
       Append(~l2s, Roots(f,Estep)[1][1]);
     end if;
   end for;
-  
+
   l2spol := Polynomial([-(l2s[1]+2)*(l2s[2]+2)*(l2s[3]+2),0,1]);
   f := Factorization(l2spol, Estep)[1][1];
   if Degree(f) gt 1 then
@@ -800,25 +800,110 @@ intrinsic BaseFieldE(a::RngIntElt, b::RngIntElt, c::RngIntElt, p::RngIntElt : pr
   return E, l2s;
 end intrinsic;
 
-intrinsic ProjectiveOrderLocal(a::RngIntElt, b::RngIntElt, c::RngIntElt, 
-                               s::RngIntElt, p::RngIntElt, e::RngIntElt) -> 
+intrinsic ProjectiveOrderLocal(a::RngIntElt, b::RngIntElt, c::RngIntElt,
+                               s::RngIntElt, p::RngIntElt, e::RngIntElt) ->
                                                       BoolElt, SeqEnum
   {Returns the projective order of delta_s modulo pp^e, where pp is a prime
    above p in E(a,b,c) using a local representation}
 
   E, l2s := BaseFieldE(a,b,c,p);
-  pi := UniformizingElement(E);
   l2 := l2s[Index([a,b,c],s)];
   l2val := Valuation(l2+2);
   assert l2val mod 2 eq 0;
   pi := UniformizingElement(E);
   R := quo<Integers(E) | pi^e>;
-  deltaspol := Polynomial([R | (l2+2)/pi^l2val,-(l2+2)/pi^(l2val div 2),1]);
+  if s eq 2 then
+    deltaspol := Polynomial([R | &*[R!(l2s[i]+2):i in [1..3]| i ne Index([a,b,c],2)],0,1]);
+  else
+    deltaspol := Polynomial([R | (l2+2)/pi^l2val,-(l2+2)/pi^(l2val div 2),1]);
+  end if;
   deltasmat := MatrixWithGivenCharacteristicPolynomial(deltaspol);
 
   for d in Divisors(s) do
     if IsScalar(deltasmat^d) then return d; end if;
   end for;
+end intrinsic;
+
+intrinsic ProjectiveRamificationTypeLocal(a::RngIntElt, b::RngIntElt, c::RngIntElt,
+                                          p::RngIntElt, e::RngIntElt) ->
+                                                            BoolElt, SeqEnum
+  {Returns the cycle type of the ramification above 0,1,oo}
+
+  p1Equivalent := function(x,y)
+    if IsUnit(x[1][1]) then
+      return IsUnit(y[1][1]) and x[2][1]*y[1][1] eq y[2][1]*x[1][1];
+    else
+      assert IsUnit(x[2][1]);
+      return  IsUnit(y[2][1]) and x[1][1]*y[2][1] eq y[1][1]*x[2][1];
+    end if;
+  end function;
+
+  findEquivRepIndex := function(x,reps)
+    for i in [1..#reps] do
+      if p1Equivalent(x,reps[i]) then
+        return i, reps[i];
+      end if;
+    end for;
+  end function;
+
+  projectiveLine := function(R, pi)
+    reps := [];
+    for x in R do
+      Append(~reps,Matrix([[R!1],[x]]));
+    end for;
+    for y in R do
+      My := Matrix([[y],[R!1]]);
+      if &and[not p1Equivalent(reps[i],My): i in [1..#reps]] then
+        Append(~reps, My);
+      end if;
+    end for;
+    // for u in units do
+    //   Append(~reps,Matrix([[u*pi],[R!1]]));
+    // end for;
+    return reps;
+  end function;
+
+  cosetactionX0 := function(delta,reps,R)
+    seq := [];
+    for i := 1 to #reps do
+      alpp := delta*reps[i];
+      Append(~seq, findEquivRepIndex(alpp,reps));
+    end for;
+    return Sym(#reps)!seq;
+  end function;
+
+  E, l2s := BaseFieldE(a,b,c,p);
+  print "Done with field";
+  pi := UniformizingElement(E);
+  R := quo<Integers(E) | pi^e>;
+  print "finding reps of R, this is the step that takes forever";
+  actualR := SetToSequence(Set([x : x in R]));
+  print "done with reps for R";
+  reps := projectiveLine(actualR,pi);
+  print "The projective line has this many elements", #reps;
+  sigmas := [];
+  for s in [a,b,c] do
+    l2 := l2s[Index([a,b,c],s)];
+    l2val := Valuation(l2+2);
+    assert l2val mod 2 eq 0;
+    if s eq 2 then
+      deltaspol := Polynomial([R | &*[R!(l2s[i]+2):i in [1..3]| i ne Index([a,b,c],2)],0,1]);
+    else
+      deltaspol := Polynomial([R | (l2+2)/pi^l2val,-(l2+2)/pi^(l2val div 2),1]);
+    end if;
+    deltasmat := MatrixWithGivenCharacteristicPolynomial(deltaspol);
+    for d in Divisors(s) do
+      if IsScalar(deltasmat^d) then
+        if d eq s then
+          break;
+        else
+          return false, _, _,_;
+        end if;
+      end if;
+    end for;
+    Append(~sigmas,cosetactionX0(deltasmat,reps,R));
+  end for;
+  return true, sigmas, Genus(sigmas), sub<Universe(sigmas) | sigmas>;
 end intrinsic;
 
 intrinsic ProjectiveRamificationType(Delta::GrpPSL2Tri, NN::Any : GammaType := 0) -> BoolElt, SeqEnum
