@@ -794,8 +794,12 @@ intrinsic BaseFieldE(a::RngIntElt, b::RngIntElt, c::RngIntElt, p::RngIntElt : pr
     EA := Estep;
     Append(~l2s, Roots(f,EA)[1][1]);
   end if;
-  E, m := RamifiedRepresentation(EA);
-  l2s := [m(l2) : l2 in l2s];
+  if Type(EA) eq FldPad then
+    E := EA;
+  else
+    E, m := RamifiedRepresentation(EA);
+    l2s := [m(l2) : l2 in l2s];
+  end if;
 
   return E, l2s;
 end intrinsic;
@@ -838,36 +842,45 @@ intrinsic ProjectiveRamificationTypeLocal(a::RngIntElt, b::RngIntElt, c::RngIntE
     end if;
   end function;
 
-  findEquivRepIndex := function(x,reps)
-    for i in [1..#reps] do
-      if p1Equivalent(x,reps[i]) then
-        return i, reps[i];
-      end if;
-    end for;
+  findEquivRepIndex := function(x,reps,indexOne)
+    R := Parent(x[1][1]);
+    if IsUnit(x[1][1]) then
+      mat := Matrix([[R!1],[x[2][1]*(x[1][1])^(-1)]]);
+      for i in [1..indexOne] do
+        if reps[i] eq mat then return i; end if;
+      end for;
+    else
+      mat := Matrix([[x[1][1]*(x[2][1])^(-1)],[R!1]]);
+      for i in [(indexOne+1)..#reps] do
+        if reps[i] eq mat then return i; end if;
+      end for;
+    end if;
   end function;
 
-  projectiveLine := function(R, pi)
+  projectiveLine := function(R,actualR, pi,resSys)
     reps := [];
-    for x in R do
+    indexOne := 0;
+    for x in actualR do
       Append(~reps,Matrix([[R!1],[x]]));
+      indexOne +:= 1;
     end for;
-    for y in R do
-      My := Matrix([[y],[R!1]]);
-      if &and[not p1Equivalent(reps[i],My): i in [1..#reps]] then
-        Append(~reps, My);
-      end if;
+    for y in resSys do
+      My := Matrix([[pi*y],[R!1]]);
+      // if &and[not p1Equivalent(reps[i],My): i in [1..#reps]] then
+      Append(~reps, My);
+      // end if;
     end for;
     // for u in units do
     //   Append(~reps,Matrix([[u*pi],[R!1]]));
     // end for;
-    return reps;
+    return reps,indexOne;
   end function;
 
-  cosetactionX0 := function(delta,reps,R)
+  cosetactionX0 := function(delta,reps,R,indexOne)
     seq := [];
     for i := 1 to #reps do
       alpp := delta*reps[i];
-      Append(~seq, findEquivRepIndex(alpp,reps));
+      Append(~seq, findEquivRepIndex(alpp,reps,indexOne));
     end for;
     return Sym(#reps)!seq;
   end function;
@@ -876,12 +889,7 @@ intrinsic ProjectiveRamificationTypeLocal(a::RngIntElt, b::RngIntElt, c::RngIntE
   print "Done with field";
   pi := UniformizingElement(E);
   R := quo<Integers(E) | pi^e>;
-  print "finding reps of R, this is the step that takes forever";
-  actualR := SetToSequence(Set([x : x in R]));
-  print "done with reps for R";
-  reps := projectiveLine(actualR,pi);
-  print "The projective line has this many elements", #reps;
-  sigmas := [];
+  deltas := [];
   for s in [a,b,c] do
     l2 := l2s[Index([a,b,c],s)];
     l2val := Valuation(l2+2);
@@ -892,6 +900,7 @@ intrinsic ProjectiveRamificationTypeLocal(a::RngIntElt, b::RngIntElt, c::RngIntE
       deltaspol := Polynomial([R | (l2+2)/pi^l2val,-(l2+2)/pi^(l2val div 2),1]);
     end if;
     deltasmat := MatrixWithGivenCharacteristicPolynomial(deltaspol);
+    Append(~deltas,deltasmat);
     for d in Divisors(s) do
       if IsScalar(deltasmat^d) then
         if d eq s then
@@ -901,7 +910,16 @@ intrinsic ProjectiveRamificationTypeLocal(a::RngIntElt, b::RngIntElt, c::RngIntE
         end if;
       end if;
     end for;
-    Append(~sigmas,cosetactionX0(deltasmat,reps,R));
+  end for;
+  resSys := ResidueSystem(R);
+  resSys := [R!x : x in resSys];
+  actualR := [R!(c+d*pi): c,d in resSys]; //Make this more general
+  print "finding reps";
+  reps, indexOne := projectiveLine(R,actualR,pi,resSys);
+  print "done with reps, we got", #reps;
+  sigmas := [];
+  for i in [1,2,3] do
+    Append(~sigmas,cosetactionX0(deltas[i],reps,R,indexOne));
   end for;
   return true, sigmas, Genus(sigmas), sub<Universe(sigmas) | sigmas>;
 end intrinsic;
