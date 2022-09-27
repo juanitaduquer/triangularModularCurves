@@ -3,11 +3,12 @@ ks := function(a,b,c : E := true);
   startks := [k : k in [1..2*m-1] | k mod a in [1,a-1] and k mod b in [1,b-1] and 
                                k mod c in [1,c-1]];  // if slow, use CRT
   if not E then return startks; end if;  // gives F
-  return [k : k in startks | 
+  if 2 in [a,b,c] then return startks; end if;
+  return [k : k in startks | not(
      (k mod (2*a) in [a+1,a-1] and k mod (2*b) in [1,2*b-1] and k mod (2*c) in [1,2*c-1]) or 
      (k mod (2*b) in [b+1,b-1] and k mod (2*c) in [1,2*c-1] and k mod (2*a) in [1,2*a-1]) or 
      (k mod (2*c) in [c+1,c-1] and k mod (2*a) in [1,2*a-1] and k mod (2*b) in [1,2*b-1]) or 
-     (k mod (2*a) in [a+1,a-1] and k mod (2*b) in [b+1,b-1] and k mod (2*c) in [c+1,c-1])];
+     (k mod (2*a) in [a+1,a-1] and k mod (2*b) in [b+1,b-1] and k mod (2*c) in [c+1,c-1]))];
 end function;
        
 lambdaminpol := function(s);
