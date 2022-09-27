@@ -15,9 +15,10 @@ lambdaminpol := function(s);
   return MinimalPolynomial(z+z^(-1));
 end function;
 
-intrinsic BaseFieldE(a::RngIntElt, b::RngIntElt, c::RngIntElt) -> FldNum
-  {Returns the field E = E(a,b,c).}
-
+intrinsic BaseFieldEGlobalAb(a::RngIntElt, b::RngIntElt, c::RngIntElt : AlsoF := false) -> FldNum
+  {Returns the field E = E(a,b,c) as abelian extension, and F if AlsoF}
+/*
+  This isn't quite right, because need to choose roots of unity consistently
   QQ := Rationals();
   Estep := QQ;
   l2s := [];
@@ -51,6 +52,26 @@ intrinsic BaseFieldE(a::RngIntElt, b::RngIntElt, c::RngIntElt) -> FldNum
   catch e;
   end try;
   return EAabs, l2s;
+*/
+
+	QQ := RationalsAsNumberField();
+	ZZ := Integers(QQ);
+	m := Lcm([a,b,c]);
+	Cl, mCl := RayClassGroup(2*m*ZZ, [1]);
+	H := sub<Cl | [(k*ZZ)@@mCl : k in ks(a,b,c)]>;
+	q, mq := quo<Cl | H>;
+	phi := Inverse(mq)*mCl;
+	AE := AbelianExtension(phi);
+
+  if AlsoF then
+		H := sub<Cl | [(k*ZZ)@@mCl : k in ks(a,b,c : E := false)]>;
+		q, mq := quo<Cl | H>;
+		phi := Inverse(mq)*mCl;
+		AF := AbelianExtension(phi);
+    return AE, AF;
+  else
+    return AE;
+  end if;
 end intrinsic;
 
 lambdaminpol := function(s);
@@ -61,24 +82,13 @@ end function;
 intrinsic GroupForABCUsingAb(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::RngIntElt) -> SeqEnum
   {Returns the size q of the residue field of a prime of E(a,b,c) above p and 1 or -1 if the associated group is PSL_2(Fq) or PGL_2(Fq) respectively.}
 
-	QQ := RationalsAsNumberField();
-	ZZ := Integers(QQ);
-	m := Lcm([a,b,c]);
-	Cl, mCl := RayClassGroup(2*m*ZZ, [1]);
-	H := sub<Cl | [(k*ZZ)@@mCl : k in ks(a,b,c)]>;
-	q, mq := quo<Cl | H>;
-	phi := Inverse(mq)*mCl;
-	A := AbelianExtension(phi);
-  decompE := DecompositionType(A,p*ZZ);
-
-	H := sub<Cl | [(k*ZZ)@@mCl : k in ks(a,b,c : E := false)]>;
-	q, mq := quo<Cl | H>;
-	phi := Inverse(mq)*mCl;
-	A := AbelianExtension(phi);
-  decompF := DecompositionType(A,p*ZZ);
-
+  AE,AF := BaseFieldEGlobalAb(a,b,c : AlsoF := true);
+  ZZ := Integers(BaseField(AE));
+	decompE := DecompositionType(AE,p*ZZ);
+	decompF := DecompositionType(AF,p*ZZ);
   degE := decompE[1][1];
   degF := decompF[1][1];
+
   if degF eq degE then
     return [p^degE,1];
   end if;

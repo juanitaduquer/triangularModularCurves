@@ -4,7 +4,6 @@ S,LambdaZeta,"Returns lambda(s)=zeta_s+zeta_s^(-1), where zeta_s is computed fro
 S,LexOrderABC,"Sorts the list by lex order in (a,b,c,q)",0,1,0,0,0,0,0,0,0,82,,82,-38,-38,-38,-38,-38
 S,IsHyperbolicTriple,"Returns true if the triple (a,b,c) is hyperbolic",0,3,0,0,0,0,0,0,0,148,,0,0,148,,0,0,148,,36,-38,-38,-38,-38,-38
 S,GroupForABC,"Returns the size q of the residue field of a prime of E(a,b,c) above p and 1 or -1 if the associated group is PSL_2(Fq) or PGL_2(Fq) respectively",0,4,0,0,0,0,0,0,0,148,,0,0,148,,0,0,148,,0,0,148,,82,-38,-38,-38,-38,-38
-S,NewGroupForABC,"Returns the size q of the residue field of a prime of E(a,b,c) above p and 1 or -1 if the associated group is PSL_2(Fq) or PGL_2(Fq) respectively",0,4,0,0,0,0,0,0,0,148,,0,0,148,,0,0,148,,0,0,148,,82,-38,-38,-38,-38,-38
 S,RamificationFromMatrix,Computes the ramification at s from the matrix representation of pi_PP(delta_s),0,2,0,0,0,0,0,0,0,148,,0,0,177,,148,-38,-38,-38,-38,-38
 S,QBound,"The maximum value of q that can give X_0(a,b,c;pp) of genus < g0 for pp with residue field of size q",0,4,0,0,0,0,0,0,0,148,,0,0,148,,0,0,148,,0,0,148,,148,-38,-38,-38,-38,-38
 S,CBound,"The maximum value of c that can give X_0(a,b,c;pp) of genus < g0",0,4,0,0,0,0,0,0,0,148,,0,0,148,,0,0,148,,0,0,148,,-1,-38,-38,-38,-38,-38

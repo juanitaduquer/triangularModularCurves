@@ -71,56 +71,6 @@ intrinsic GroupForABC(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::RngIntElt) -> Se
   return [#E,-1];
 end intrinsic;
 
-lambdaminpol := function(s);
-  K<z> := CyclotomicField(s);
-  return MinimalPolynomial(z+z^(-1));
-end function;
-
-intrinsic NewGroupForABC(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::RngIntElt) -> SeqEnum
-  {Returns the size q of the residue field of a prime of E(a,b,c) above p and 1 or -1 if the associated group is PSL_2(Fq) or PGL_2(Fq) respectively.}
-
-  Estep := GF(p);
-  l2s := [];
-  for s in [a,b,c] do
-    f := Factorization(lambdaminpol(s),Estep)[1][1];
-    if Degree(f) gt 1 then
-      Estep := ext<Estep | f>;
-      l2s := ChangeUniverse(l2s, Estep);
-      Append(~l2s, Estep.1);
-    else
-      Append(~l2s, Roots(f,Estep)[1][1]);
-    end if;
-  end for;
-  
-  l2spol := Polynomial([-(l2s[1]+2)*(l2s[2]+2)*(l2s[3]+2),0,1]);
-  f := Factorization(l2spol, Estep)[1][1];
-  if Degree(f) gt 1 then
-    EA := ext<Estep | f>;
-    l2s := ChangeUniverse(l2s, EA);
-    Append(~l2s, EA.1);
-  else
-    EA := Estep;
-    Append(~l2s, Roots(f,EA)[1][1]);
-  end if;
-  E := EA;
-
-  Fstep := GF(p);
-  for s in [a,b,c] do
-    f := Factorization(lambdaminpol(2*s),Fstep)[1][1];
-    if Degree(f) gt 1 then
-      Fstep := ext<Fstep | f>;
-    end if;
-  end for;
-  F := Fstep;
-
-  degE := Degree(E);
-  degF := Degree(F);
-  if degF eq degE then
-    return [#E,1];
-  end if;
-  return [#E,-1];
-end intrinsic;
-
 //*****************************//
 //         Ramification        //
 //*****************************//
@@ -818,6 +768,18 @@ lambdaminpol := function(s);
   return MinimalPolynomial(z+z^(-1));
 end function;
 
+lambdaprodminpol := function(a,b,c);
+  m := Lcm([a,b,c]);
+  K<z> := CyclotomicField(m);
+  za := z^(m div a);
+  zb := z^(m div b);
+  zc := z^(m div c);
+  la := za+1/za;
+  lb := zb+1/zb;
+  lc := zc+1/zc;
+  return MinimalPolynomial((la+2)*(lb+2)*(lc+2));
+end function;
+
 intrinsic BaseFieldE(a::RngIntElt, b::RngIntElt, c::RngIntElt, p::RngIntElt : prec := 40) -> FldPad
   {Returns the local field E_pp where E = E(a,b,c) and pp is a prime above p.}
 
@@ -831,19 +793,20 @@ intrinsic BaseFieldE(a::RngIntElt, b::RngIntElt, c::RngIntElt, p::RngIntElt : pr
       l2s := ChangeUniverse(l2s, Estep);
       Append(~l2s, Estep.1);
     else
-      Append(~l2s, Roots(f,Estep)[1][1]);
+      Append(~l2s, Roots(f,Estep)[1][1]);  // caution: can't choose arbitrary root
     end if;
   end for;
 
-  l2spol := Polynomial([-(l2s[1]+2)*(l2s[2]+2)*(l2s[3]+2),0,1]);
-  f := Factorization(l2spol, Estep)[1][1];
+  l2spol := lambdaprodminpol(a,b,c);
+  labc := Roots(l2spol, Estep)[1][1];
+  f := Factorization(Polynomial([-labc,0,1]), Estep)[1][1];
   if Degree(f) gt 1 then
     EA := LocalField(Estep, f);
     l2s := ChangeUniverse(l2s, EA);
     Append(~l2s, EA.1);
   else
     EA := Estep;
-    Append(~l2s, Roots(f,EA)[1][1]);
+    // Append(~l2s, Roots(f,EA)[1][1]);
   end if;
   if Type(EA) eq FldPad then
     E := EA;
