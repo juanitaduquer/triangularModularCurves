@@ -18,6 +18,7 @@ S,H1QuotientReps,Returns matrix representatives for GN/H1 and a map to those rep
 S,OrderPXL,Returns the order of the matrix when thought in PXL,0,2,0,0,0,0,0,0,0,-1,,0,0,-1,,-1,-38,-38,-38,-38,-38
 S,BaseFieldE,"Returns the local field E_pp where E = E(a,b,c) and pp is a prime above p",0,4,0,0,0,0,0,0,0,148,,0,0,148,,0,0,148,,0,0,148,,400,-38,-38,-38,-38,-38
 S,ProjectiveOrderLocal,"Returns the projective order of delta_s modulo pp^e, where pp is a prime above p in E(a,b,c) using a local representation",0,6,0,0,0,0,0,0,0,148,,0,0,148,,0,0,148,,0,0,148,,0,0,148,,0,0,148,,36,82,-38,-38,-38,-38
+S,RightOrderLocal,"Returns true if the projective order of delta_s modulo pp^e is s for s in [a,b,c]",0,5,0,0,0,0,0,0,0,148,,0,0,148,,0,0,148,,0,0,148,,0,0,148,,36,-38,-38,-38,-38,-38
 S,ProjectiveRamificationTypeLocal,"Returns the cycle type of the ramification above 0,1,oo",0,5,0,0,0,0,0,0,0,148,,0,0,148,,0,0,148,,0,0,148,,0,0,148,,36,82,-38,-38,-38,-38
 S,ProjectiveRamificationType,"Returns the cycle type of the ramification above 0,1,oo; GammaType is either 0 or 1",0,2,0,0,0,0,0,0,0,-1,,0,0,GrpPSL2Tri,,36,82,-38,-38,-38,-38
 S,ListBoundedGenusAdmissible,"Returns the list (organized by genus in ascending order) of lists (a,b,c;p) such that the curve X_0(a,b,c;pp) have genus bounded by g and pp is a prime of norm p",0,1,0,0,0,0,0,0,0,148,,82,-38,-38,-38,-38,-38

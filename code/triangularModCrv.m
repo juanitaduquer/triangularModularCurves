@@ -828,6 +828,36 @@ intrinsic ProjectiveOrderLocal(a::RngIntElt, b::RngIntElt, c::RngIntElt,
   end for;
 end intrinsic;
 
+intrinsic RightOrderLocal(a::RngIntElt, b::RngIntElt, c::RngIntElt, p::RngIntElt, e::RngIntElt) ->
+                                                      BoolElt
+  {Returns true if the projective order of delta_s modulo pp^e is s for s in [a,b,c]}
+
+  E, l2s := BaseFieldE(a,b,c,p);
+  print "Found base field for orders";
+  pi := UniformizingElement(E);
+  R := quo<Integers(E) | pi^e>;
+  for s in [s: s in [a,b,c] | s mod p eq 0] do
+    l2 := l2s[Index([a,b,c],s)];
+    l2val := Valuation(l2+2);
+    assert l2val mod 2 eq 0;
+    if s eq 2 then
+      deltaspol := Polynomial([R | &*[R!(l2s[i]+2):i in [1..3]| i ne Index([a,b,c],2)],0,1]);
+    else
+      deltaspol := Polynomial([R | (l2+2)/pi^l2val,-(l2+2)/pi^(l2val div 2),1]);
+    end if;
+    deltasmat := MatrixWithGivenCharacteristicPolynomial(deltaspol);
+
+    for d in Divisors(s) do
+      if IsScalar(deltasmat^d) then
+        if d ne s then
+          return false;
+        end if;
+      end if;
+    end for;
+  end for;
+  return true;
+end intrinsic;
+
 intrinsic ProjectiveRamificationTypeLocal(a::RngIntElt, b::RngIntElt, c::RngIntElt,
                                           p::RngIntElt, e::RngIntElt) ->
                                                             BoolElt, SeqEnum
@@ -920,6 +950,7 @@ intrinsic ProjectiveRamificationTypeLocal(a::RngIntElt, b::RngIntElt, c::RngIntE
   sigmas := [];
   for i in [1,2,3] do
     Append(~sigmas,cosetactionX0(deltas[i],reps,R,indexOne));
+    print "done with sigma", i;
   end for;
   return true, sigmas, Genus(sigmas), sub<Universe(sigmas) | sigmas>;
 end intrinsic;
