@@ -52,12 +52,13 @@ intrinsic GroupForABC(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::RngIntElt) -> Se
   bigPower := p^power;
   k := GF(bigPower);
   twoap,twobp,twocp := Explode([(2*s) div (p^Valuation(2*s,p)) : s in [a,b,c]]);
+  ap,bp,cp := Explode([s div (p^Valuation(2*s,p)) : s in [a,b,c]]);
   zeta_twom := PrimitiveElement(k)^((bigPower-1) div twom);
-  genF := [LambdaZeta(zeta_twom,m,2*s) : s in [a,b,c] | s mod p ne 0];
-  genE := [LambdaZeta(zeta_twom,m,s) : s in [a,b,c] | s mod p ne 0];
+  genF := [LambdaZeta(zeta_twom,m,2*s) : s in [twoap,twobp,twocp]];
+  genE := [LambdaZeta(zeta_twom,m,s) : s in [ap,bp,cp]];
   lastE := k!1;
-  for s in [s : s in [a,b,c] | s mod p ne 0] do
-    lastE *:= LambdaZeta(zeta_twom,m,2*s);
+  for s in [s : s in [twoap,twobp,twocp]] do
+    lastE *:= LambdaZeta(zeta_twom,m,s);
   end for;
   Append(~genE,lastE);
   F := sub<k|genF>;
@@ -767,6 +768,18 @@ lambdaminpol := function(s);
   return MinimalPolynomial(z+z^(-1));
 end function;
 
+lambdaprodminpol := function(a,b,c);
+  m := Lcm([a,b,c]);
+  K<z> := CyclotomicField(m);
+  za := z^(m div a);
+  zb := z^(m div b);
+  zc := z^(m div c);
+  la := za+1/za;
+  lb := zb+1/zb;
+  lc := zc+1/zc;
+  return MinimalPolynomial((la+2)*(lb+2)*(lc+2));
+end function;
+
 intrinsic BaseFieldE(a::RngIntElt, b::RngIntElt, c::RngIntElt, p::RngIntElt : prec := 40) -> FldPad
   {Returns the local field E_pp where E = E(a,b,c) and pp is a prime above p.}
 
@@ -780,19 +793,20 @@ intrinsic BaseFieldE(a::RngIntElt, b::RngIntElt, c::RngIntElt, p::RngIntElt : pr
       l2s := ChangeUniverse(l2s, Estep);
       Append(~l2s, Estep.1);
     else
-      Append(~l2s, Roots(f,Estep)[1][1]);
+      Append(~l2s, Roots(f,Estep)[1][1]);  // caution: can't choose arbitrary root
     end if;
   end for;
 
-  l2spol := Polynomial([-(l2s[1]+2)*(l2s[2]+2)*(l2s[3]+2),0,1]);
-  f := Factorization(l2spol, Estep)[1][1];
+  l2spol := lambdaprodminpol(a,b,c);
+  labc := Roots(l2spol, Estep)[1][1];
+  f := Factorization(Polynomial([-labc,0,1]), Estep)[1][1];
   if Degree(f) gt 1 then
     EA := LocalField(Estep, f);
     l2s := ChangeUniverse(l2s, EA);
     Append(~l2s, EA.1);
   else
     EA := Estep;
-    Append(~l2s, Roots(f,EA)[1][1]);
+    // Append(~l2s, Roots(f,EA)[1][1]);
   end if;
   if Type(EA) eq FldPad then
     E := EA;
