@@ -957,7 +957,7 @@ intrinsic ProjectiveRamificationTypeLocal(a::RngIntElt, b::RngIntElt, c::RngIntE
   end for;
   resSys := ResidueSystem(R);
   resSys := [R!x : x in resSys];
-  actualR := [R!(c+d*pi): c,d in resSys]; //Make this more general
+  actualR := [R!(&+[c[i]*pi^(i-1) : i in [1..#c]]) : c in CartesianPower(resSys,e)];
   print "finding reps";
   reps, indexOne := projectiveLine(R,actualR,pi,resSys);
   print "done with reps, we got", #reps;
