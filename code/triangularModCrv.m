@@ -52,16 +52,67 @@ intrinsic GroupForABC(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::RngIntElt) -> Se
   bigPower := p^power;
   k := GF(bigPower);
   twoap,twobp,twocp := Explode([(2*s) div (p^Valuation(2*s,p)) : s in [a,b,c]]);
+  ap,bp,cp := Explode([s div (p^Valuation(2*s,p)) : s in [a,b,c]]);
   zeta_twom := PrimitiveElement(k)^((bigPower-1) div twom);
-  genF := [LambdaZeta(zeta_twom,m,2*s) : s in [a,b,c] | s mod p ne 0];
-  genE := [LambdaZeta(zeta_twom,m,s) : s in [a,b,c] | s mod p ne 0];
+  genF := [LambdaZeta(zeta_twom,m,2*s) : s in [twoap,twobp,twocp]];
+  genE := [LambdaZeta(zeta_twom,m,s) : s in [ap,bp,cp]];
   lastE := k!1;
-  for s in [s : s in [a,b,c] | s mod p ne 0] do
-    lastE *:= LambdaZeta(zeta_twom,m,2*s);
+  for s in [s : s in [twoap,twobp,twocp]] do
+    lastE *:= LambdaZeta(zeta_twom,m,s);
   end for;
   Append(~genE,lastE);
   F := sub<k|genF>;
   E := sub<k| genE>;
+  degE := Degree(E);
+  degF := Degree(F);
+  if degF eq degE then
+    return [#E,1];
+  end if;
+  return [#E,-1];
+end intrinsic;
+
+lambdaminpol := function(s);
+  K<z> := CyclotomicField(s);
+  return MinimalPolynomial(z+z^(-1));
+end function;
+
+intrinsic NewGroupForABC(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::RngIntElt) -> SeqEnum
+  {Returns the size q of the residue field of a prime of E(a,b,c) above p and 1 or -1 if the associated group is PSL_2(Fq) or PGL_2(Fq) respectively.}
+
+  Estep := GF(p);
+  l2s := [];
+  for s in [a,b,c] do
+    f := Factorization(lambdaminpol(s),Estep)[1][1];
+    if Degree(f) gt 1 then
+      Estep := ext<Estep | f>;
+      l2s := ChangeUniverse(l2s, Estep);
+      Append(~l2s, Estep.1);
+    else
+      Append(~l2s, Roots(f,Estep)[1][1]);
+    end if;
+  end for;
+  
+  l2spol := Polynomial([-(l2s[1]+2)*(l2s[2]+2)*(l2s[3]+2),0,1]);
+  f := Factorization(l2spol, Estep)[1][1];
+  if Degree(f) gt 1 then
+    EA := ext<Estep | f>;
+    l2s := ChangeUniverse(l2s, EA);
+    Append(~l2s, EA.1);
+  else
+    EA := Estep;
+    Append(~l2s, Roots(f,EA)[1][1]);
+  end if;
+  E := EA;
+
+  Fstep := GF(p);
+  for s in [a,b,c] do
+    f := Factorization(lambdaminpol(2*s),Fstep)[1][1];
+    if Degree(f) gt 1 then
+      Fstep := ext<Fstep | f>;
+    end if;
+  end for;
+  F := Fstep;
+
   degE := Degree(E);
   degF := Degree(F);
   if degF eq degE then
