@@ -963,8 +963,11 @@ intrinsic ProjectiveRamificationTypeLocal(a::RngIntElt, b::RngIntElt, c::RngIntE
   print "done with reps, we got", #reps;
   sigmas := [];
   for i in [1,2,3] do
-    Append(~sigmas,cosetactionX0(deltas[i],reps,R,indexOne));
-    print "done with sigma", i;
+    try
+      Append(~sigmas,cosetactionX0(deltas[i],reps,R,indexOne));
+    catch e
+      error "Use ProjectiveRamificationType instead";
+    end try;
   end for;
   return true, sigmas, Genus(sigmas), sub<Universe(sigmas) | sigmas>;
 end intrinsic;
