@@ -58,11 +58,11 @@ intrinsic GroupForABC(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::RngIntElt) -> Se
   twoap,twobp,twocp := Explode([(2*s) div (p^Valuation(2*s,p)) : s in [a,b,c]]);
   ap,bp,cp := Explode([s div (p^Valuation(s,p)) : s in [a,b,c]]);
   zeta_twom := PrimitiveElement(k)^((bigPower-1) div twom);
-  genF := [LambdaZeta(zeta_twom,m,2*s) : s in [twoap,twobp,twocp]|s ne 0];
+  genF := [LambdaZeta(zeta_twom,m,s) : s in [twoap,twobp,twocp]|s ne 0];
   genE := [LambdaZeta(zeta_twom,m,s) : s in [ap,bp,cp]|s ne 0];
   lastE := k!1;
-  for s in [s : s in [twoap,twobp,twocp]|s ne 0] do
-    lastE *:= LambdaZeta(zeta_twom,m,2*s);
+  for s in [s : s in [twoap,twobp,twocp]] do
+    lastE *:= LambdaZeta(zeta_twom,m,s);
   end for;
   Append(~genE,lastE);
   F := sub<k|genF>;
