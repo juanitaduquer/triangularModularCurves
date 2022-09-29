@@ -8,7 +8,11 @@ end intrinsic;
 
 intrinsic LambdaZeta(zeta::FldFinElt,m::RngIntElt,s::RngIntElt) -> FldFinElt
 {Returns lambda(s)=zeta_s+zeta_s^(-1), where zeta_s is computed from the 2m-th root of 1 given.}
-  return Parent(zeta)!(zeta^((2*m) div s)+(zeta^((2*m) div s))^(-1));
+  if s eq 0 then
+    return Parent(zeta)!2;
+  else
+    return Parent(zeta)!(zeta^((2*m) div s)+(zeta^((2*m) div s))^(-1));
+  end if;
 end intrinsic;
 
 intrinsic LexOrderABC(L::SeqEnum) -> SeqEnum
@@ -134,19 +138,20 @@ intrinsic GenusTriangularModularCurve(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::
     end if;
     // This is the hardest case. We cannot defice the ramification from only knowing that the genus is in ZZ
     if [a,b] eq [2,2] then
+      error "Sorry, we only support hyperbolic triples";
       // sigmas := MatricesTriple([a,b,c],q,pm);
       // return &+[RamificationFromMatrix(sigmas[i],q) : i in[1..3]];
     end if;
     if a ne 2 then
       return &+[RamoficationAtS(s,q) : s in [a,b,c]];
     else
-      if pm eq 1 then
-        if q mod 4 eq 1 then
-          return (q-1)/2+RamoficationAtS(b,q)+RamoficationAtS(c,q);
-        else
-          return (q+1)/2+RamoficationAtS(b,q)+RamoficationAtS(c,q);
-        end if;
-      else
+      // if pm eq 1 then
+      //   if q mod 4 eq 1 then
+      //     return (q-1)/2+RamoficationAtS(b,q)+RamoficationAtS(c,q);
+      //   else
+      //     return (q+1)/2+RamoficationAtS(b,q)+RamoficationAtS(c,q);
+      //   end if;
+      // else
       // Now anyting can happen. We use that g is an integer.
         r := (q+1)/2+RamoficationAtS(b,q)+RamoficationAtS(c,q);
         if Floor((1/2)*(-2*(q+1)+r+2)) eq ((1/2)*(-2*(q+1)+r+2)) then
@@ -154,7 +159,7 @@ intrinsic GenusTriangularModularCurve(a::RngIntElt,b::RngIntElt,c::RngIntElt,p::
         else;
           return r-1;
         end if;
-      end if;
+      // end if;
     end if;
   end function;
 
@@ -901,19 +906,26 @@ intrinsic ProjectiveRamificationTypeLocal(a::RngIntElt, b::RngIntElt, c::RngIntE
     end if;
   end function;
 
-  projectiveLine := function(R,actualR, pi,resSys)
+  projectiveLine := function(R,actualR,pi,resSys,e)
     reps := [];
     indexOne := 0;
     for x in actualR do
       Append(~reps,Matrix([[R!1],[x]]));
       indexOne +:= 1;
     end for;
-    for y in resSys do
-      My := Matrix([[pi*y],[R!1]]);
-      // if &and[not p1Equivalent(reps[i],My): i in [1..#reps]] then
-      Append(~reps, My);
-      // end if;
-    end for;
+    if e eq 1 then
+      Append(~reps, Matrix([[0],[R!1]]));
+      return reps,indexOne;
+    elif e eq 2 then
+      for y in resSys do
+        My := Matrix([[pi*y],[R!1]]);
+        // if &and[not p1Equivalent(reps[i],My): i in [1..#reps]] then
+        Append(~reps, My);
+        // end if;
+      end for;
+    else
+      error "We only support PP^2";
+    end if;
     // for u in units do
     //   Append(~reps,Matrix([[u*pi],[R!1]]));
     // end for;
@@ -959,7 +971,7 @@ intrinsic ProjectiveRamificationTypeLocal(a::RngIntElt, b::RngIntElt, c::RngIntE
   resSys := [R!x : x in resSys];
   actualR := [R!(&+[c[i]*pi^(i-1) : i in [1..#c]]) : c in CartesianPower(resSys,e)];
   print "finding reps";
-  reps, indexOne := projectiveLine(R,actualR,pi,resSys);
+  reps, indexOne := projectiveLine(R,actualR,pi,resSys,e);
   print "done with reps, we got", #reps;
   sigmas := [];
   for i in [1,2,3] do
