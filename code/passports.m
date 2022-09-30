@@ -1,4 +1,4 @@
-load "listsLowGenus.m";
+load "listsPrimeLowGenus.m";
 
 output := "PassportsOutput.txt";
 
@@ -33,7 +33,7 @@ Write(output, "******************************************");
 Write(output, "Genus 0");
 Write(output, "******************************************");
 Write(output, "\n");
-for t in genus0 do
+for t in genus0X0 do
   Write(output, Sprint(t));
   Write(output, ";");
   Write(output, "\n");
@@ -44,7 +44,7 @@ Write(output, "******************************************");
 Write(output, "Genus 1");
 Write(output, "******************************************");
 Write(output, "\n");
-for t in genus1 do
+for t in genus1X0 do
   Write(output, Sprint(t));
   Write(output, ";");
   Write(output, "\n");
